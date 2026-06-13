@@ -106,14 +106,19 @@ function WelcomeScene() {
   );
 }
 
-export default function Onboarding({ onComplete }) {
-  const [step, setStep] = useState(0);
+// initialStep: desde qué paso arrancar.
+//   0 → flujo original (bienvenida → intereses → ...)
+//   1 → saltar la bienvenida y empezar directo en intereses (para usuarios registrados)
+export default function Onboarding({ onComplete, initialStep = 0 }) {
+  const [step, setStep] = useState(initialStep);
   const [intereses, setIntereses] = useState(["Naturaleza", "Miradores", "Cafés"]);
   const [compania, setCompania] = useState("Con pareja");
   const [actividad, setActividad] = useState("Moderado");
 
   const total = 4;
-  const back = () => setStep((s) => Math.max(0, s - 1));
+  // "back" no retrocede más allá del primer paso disponible
+  // (evita que desde el paso 1 el usuario retroceda al step 0 de bienvenida)
+  const back = () => setStep((s) => Math.max(initialStep, s - 1));
   const next = () => setStep((s) => s + 1);
   const toggle = (arr, set, v) => set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
 

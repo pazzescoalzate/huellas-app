@@ -4,7 +4,7 @@ import {
   ArrowRight, ChevronLeft, ChevronRight, MapPin, Heart, Bookmark, Search,
   SlidersHorizontal, House, Map, User, Sparkles, Clock, Route, Mountain,
   Check, X, Share, Download, Sun, Star, Leaf, Shield, Compass, Thermometer,
-  Eye, Wifi, Landmark, Utensils, Zap, Coffee, Camera, Activity, Moon, Tent,
+  Eye, EyeOff, Wifi, Landmark, Utensils, Zap, Coffee, Camera, Activity, Moon, Tent,
   Bike, Waves, Users, Gem, Crown, Flame, Snowflake, Trees, Footprints,
   Award, Medal, Lock,
 } from "lucide-react";
@@ -16,7 +16,7 @@ const ICONS = {
   sparkles: Sparkles, clock: Clock, route: Route, mountain: Mountain,
   check: Check, x: X, share: Share, download: Download, sun: Sun,
   star: Star, leaf: Leaf, shield: Shield, compass: Compass,
-  thermometer: Thermometer, eye: Eye, wifi: Wifi, building: Landmark,
+  thermometer: Thermometer, eye: Eye, eyeOff: EyeOff, wifi: Wifi, building: Landmark,
   utensils: Utensils, bolt: Zap, cup: Coffee, camera: Camera,
   activity: Activity, moon: Moon, tent: Tent, bike: Bike,
   waves: Waves, users: Users, gem: Gem, crown: Crown, flame: Flame,

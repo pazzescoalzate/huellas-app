@@ -6,7 +6,8 @@ import PhotoSlot from "./PhotoSlot.jsx";
 import { PrimaryBtn, OptionRow } from "./Onboarding.jsx";
 import { ONB } from "../data/huella.js";
 
-export default function SettingsSheet({ prefs, onSave, onClose }) {
+// nombre e iniciales vienen del perfil real (Profile.jsx los pasa aquí)
+export default function SettingsSheet({ prefs, onSave, onClose, nombre, iniciales }) {
   const [closing, setClosing] = useState(false);
   const [intereses, setIntereses] = useState(prefs.intereses || []);
   const [compania, setCompania] = useState(prefs.compania || "Solo");
@@ -51,8 +52,9 @@ export default function SettingsSheet({ prefs, onSave, onClose }) {
           {/* foto */}
           <div className="flex items-center gap-4 mb-6">
             <div className="relative w-[84px] h-[84px] shrink-0">
+              {/* Iniciales reales del usuario (prop que viene de Profile.jsx) */}
               <div className="absolute inset-0 rounded-full grid place-items-center text-white text-[30px] font-semibold border-2 border-white/[0.16]"
-                style={{ background: "linear-gradient(135deg, #C05A34, #7A3E55)" }}>MS</div>
+                style={{ background: "linear-gradient(135deg, #C05A34, #7A3E55)" }}>{iniciales || "?"}</div>
               <PhotoSlot id="avatar-photo" shape="circle"
                 style={{ position: "absolute", inset: 0, width: 84, height: 84, zIndex: 2 }} />
               <span className="absolute -right-0.5 -bottom-0.5 w-7 h-7 rounded-full grid place-items-center bg-accent z-[3] pointer-events-none" style={{ border: "2px solid var(--bg-2)" }}>
