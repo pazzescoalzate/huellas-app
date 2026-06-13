@@ -154,7 +154,7 @@ export default function DetailSheet({ exp, saved, onSave, onClose }) {
       <div className={"hu-sheet absolute inset-0 bg-bg1 flex flex-col " + (closing ? "hu-sheet-out" : "hu-sheet-in")}>
 
         <div className="flex-1 overflow-y-auto pb-[100px]">
-          <PhotoCarousel cat={exp.cat} expId={exp.id} slot={true} h={340} rounded="rounded-none">
+          <PhotoCarousel cat={exp.cat} h={340} rounded="rounded-none">
             <div className="px-[18px] py-4 flex justify-between absolute top-0 left-0 right-0 z-[8]">
               <button onClick={close} className="w-10 h-10 rounded-full grid place-items-center bg-[rgba(20,18,16,0.42)] backdrop-blur-[10px] border border-white/[0.18]">
                 <Icon name="chevLeft" size={20} color="#fff" />

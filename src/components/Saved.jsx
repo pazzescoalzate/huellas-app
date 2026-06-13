@@ -1,20 +1,84 @@
-/* HUELLA — Guardados */
+/* HUELLA — Guardados
+   - Invitado:   pantalla CTA para crear cuenta
+   - Registrado: lista real de guardados desde Supabase (GuardadosContext) */
 import { useState } from "react";
 import Icon from "./Icon.jsx";
 import { CatSurface } from "./Shared.jsx";
 import { CardTap } from "./Cards.jsx";
 import { ScreenHead } from "./Tours.jsx";
-import { byId } from "../data/huella.js";
+import { useAuth } from "../context/AuthContext.jsx";
+import { useGuardados } from "../context/GuardadosContext.jsx";
 
-export default function SavedScreen({ saved, onSave, onOpen }) {
-  const items = saved.map((id) => byId(id)).filter(Boolean);
+// Etiquetas legibles para cada categoría de OSM
+const CAT_LABEL = {
+  naturaleza: "Naturaleza",
+  cultura:    "Cultura",
+  gastronomia:"Gastronomía",
+  miradores:  "Miradores",
+  cafes:      "Cafés",
+  aventura:   "Aventura",
+  bienestar:  "Bienestar",
+};
+
+/* Pantalla para invitados: los invita a registrarse para poder guardar lugares */
+function PantallaGuardadosInvitado({ onCrearCuenta }) {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center px-8 pb-28 text-center">
+      <div
+        className="w-[72px] h-[72px] rounded-2xl mb-6 grid place-items-center"
+        style={{ background: "rgba(210,115,79,0.10)", border: "1px solid rgba(210,115,79,0.25)" }}
+      >
+        <Icon name="heart" size={32} color="var(--accent-soft)" />
+      </div>
+      <h2 className="text-[21px] font-semibold text-ink-strong tracking-[-0.01em] mb-2 [text-wrap:balance]">
+        Guarda tus lugares favoritos
+      </h2>
+      <p className="text-[14px] font-light text-ink-soft leading-[1.6] mb-8 [text-wrap:balance]">
+        Crea una cuenta gratis para guardar experiencias y volver a ellas cuando quieras.
+      </p>
+      <button
+        onClick={onCrearCuenta}
+        className="w-full h-14 rounded-full bg-accent text-white text-[16px] font-semibold shadow-[0_10px_30px_rgba(210,115,79,0.32)]"
+      >
+        Crear cuenta gratis
+      </button>
+    </div>
+  );
+}
+
+export default function SavedScreen({ onOpen, onCrearCuenta }) {
+  const { esInvitado } = useAuth();
+  // Leemos del contexto: ya no necesitamos props "saved" ni "onSave"
+  const { guardadosList, toggleGuardado } = useGuardados();
   const [scrolled, setScrolled] = useState(false);
 
-  return (
-    <div onScroll={(e) => setScrolled(e.target.scrollTop > 8)} className="flex-1 overflow-y-auto pb-24">
-      <ScreenHead title="Guardados" sub={items.length ? `${items.length} ${items.length === 1 ? "experiencia" : "experiencias"} por vivir` : null} scrolled={scrolled} />
+  // Invitado → pantalla de conversión (no tiene guardados en Supabase)
+  if (esInvitado) {
+    return (
+      <div className="flex-1 overflow-y-auto pb-24 flex flex-col">
+        <PantallaGuardadosInvitado onCrearCuenta={onCrearCuenta} />
+      </div>
+    );
+  }
 
-      {items.length === 0 ? (
+  // Usuario registrado → lista real de guardados
+  return (
+    <div
+      onScroll={(e) => setScrolled(e.target.scrollTop > 8)}
+      className="flex-1 overflow-y-auto pb-24"
+    >
+      <ScreenHead
+        title="Guardados"
+        sub={
+          guardadosList.length
+            ? `${guardadosList.length} ${guardadosList.length === 1 ? "experiencia" : "experiencias"} por vivir`
+            : null
+        }
+        scrolled={scrolled}
+      />
+
+      {guardadosList.length === 0 ? (
+        // Estado vacío para usuarios registrados sin guardados aún
         <div className="flex flex-col items-center justify-center text-center px-11 pt-20">
           <div className="w-[72px] h-[72px] rounded-lg grid place-items-center mb-5 bg-[rgba(210,115,79,0.1)] border border-[rgba(210,115,79,0.24)]">
             <Icon name="heart" size={32} color="var(--accent-soft)" />
@@ -25,10 +89,15 @@ export default function SavedScreen({ saved, onSave, onOpen }) {
           </p>
         </div>
       ) : (
+        // Lista de lugares guardados reales
         <div className="flex flex-col gap-4 px-[22px] pt-2">
-          {items.map((exp, i) => (
-            <div key={exp.id} className="rise" style={{ animationDelay: `${Math.min(i, 5) * 0.05}s` }}>
-              <SavedRow exp={exp} onSave={() => onSave(exp.id)} onOpen={onOpen} />
+          {guardadosList.map((lugar, i) => (
+            <div key={lugar.id} className="rise" style={{ animationDelay: `${Math.min(i, 5) * 0.05}s` }}>
+              <SavedRow
+                lugar={lugar}
+                onOpen={onOpen}
+                onToggle={toggleGuardado}
+              />
             </div>
           ))}
         </div>
@@ -37,26 +106,38 @@ export default function SavedScreen({ saved, onSave, onOpen }) {
   );
 }
 
-function SavedRow({ exp, onSave, onOpen }) {
+function SavedRow({ lugar, onOpen, onToggle }) {
+  const catLabel = CAT_LABEL[lugar.cat] || lugar.cat || "Lugar";
+
   return (
-    <CardTap onClick={() => onOpen(exp)}
-      className="flex gap-3.5 w-full text-left p-3 rounded-xl bg-white/[0.045] border border-cardstroke shadow-elev1">
-      <CatSurface cat={exp.cat} className="w-[92px] h-[92px] rounded-lg shrink-0" />
+    <CardTap
+      onClick={() => onOpen(lugar)}
+      className="flex gap-3.5 w-full text-left p-3 rounded-xl bg-white/[0.045] border border-cardstroke shadow-elev1"
+    >
+      {/* Miniatura de la categoría (mismo degradado que en las tarjetas) */}
+      <CatSurface cat={lugar.cat} className="w-[92px] h-[92px] rounded-lg shrink-0" />
+
       <div className="flex-1 min-w-0 flex flex-col justify-center">
         <div className="flex items-start justify-between gap-2">
-          <div className="text-[16px] font-semibold text-ink-strong tracking-[-0.01em] leading-[1.2] whitespace-nowrap overflow-hidden text-ellipsis">{exp.title}</div>
-          <button onClick={(e) => { e.stopPropagation(); onSave(); }} className="shrink-0 -mt-0.5">
+          <div className="text-[16px] font-semibold text-ink-strong tracking-[-0.01em] leading-[1.2] whitespace-nowrap overflow-hidden text-ellipsis">
+            {lugar.title}
+          </div>
+          {/* Corazón rojo: tocarlo quita el lugar de guardados */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggle(lugar); }}
+            className="shrink-0 -mt-0.5"
+          >
             <Icon name="heart" size={20} fill="var(--accent)" color="var(--accent)" />
           </button>
         </div>
-        <div className="flex items-center gap-1 text-[13px] text-ink-soft mt-[3px]">
-          <Icon name="star" size={12} color="var(--ink-strong)" fill="var(--ink-strong)" stroke={0} />
-          <span className="font-medium text-ink-strong">{exp.rating}</span>
-          <span className="text-ink-ghost mx-0.5">·</span>
-          <span className="whitespace-nowrap overflow-hidden text-ellipsis">{exp.place}</span>
-        </div>
-        <div className="text-[13px] text-ink-faint mt-0.5">{exp.dist} de ti</div>
-        <div className="text-[14px] font-semibold text-ink-strong mt-1.5">{exp.tagline}</div>
+
+        {/* Categoría como subtítulo (no guardamos rating/dist en Supabase) */}
+        <div className="text-[13px] text-ink-soft mt-[3px]">{catLabel}</div>
+
+        {/* Tagline: solo si existe (los lugares de OSM pueden no tenerlo) */}
+        {lugar.tagline ? (
+          <div className="text-[14px] font-semibold text-ink-strong mt-1.5">{lugar.tagline}</div>
+        ) : null}
       </div>
     </CardTap>
   );

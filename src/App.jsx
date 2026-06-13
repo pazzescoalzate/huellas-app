@@ -9,9 +9,11 @@ import ProfileScreen from "./components/Profile.jsx";
 import DetailSheet from "./components/Detail.jsx";
 import LocationSheet from "./components/Location.jsx";
 import AuthScreen from "./components/auth/AuthScreen.jsx";
+import Icon from "./components/Icon.jsx";
 import { LOCATIONS } from "./data/huella.js";
 import { useAuth } from "./context/AuthContext.jsx";
 import { usePerfil } from "./context/PerfilContext.jsx";
+import { useGuardados } from "./context/GuardadosContext.jsx";
 import wordmarkWhite from "./assets/huella-wordmark-white.svg";
 
 function readState() {
@@ -31,10 +33,53 @@ function SplashCarga() {
   );
 }
 
+/* Modal que aparece cuando un invitado intenta guardar un lugar.
+   Invita a crear una cuenta sin bloquear la navegación. */
+function AvisoInvitado({ onCerrar, onCrearCuenta }) {
+  return (
+    <div className="absolute inset-0 z-[80] flex flex-col">
+      {/* Fondo oscuro: clic fuera cierra el modal */}
+      <div
+        onClick={onCerrar}
+        className="absolute inset-0 bg-[rgba(8,7,6,0.6)] backdrop-blur-[2px]"
+      />
+      {/* Sheet deslizable desde abajo */}
+      <div className="absolute left-0 right-0 bottom-0 bg-bg1 rounded-t-xl px-[22px] pt-5 pb-[max(32px,env(safe-area-inset-bottom))] border-t border-cardstroke shadow-[0_-20px_60px_rgba(0,0,0,0.5)]">
+        {/* Indicador de arrastre */}
+        <div className="w-10 h-1 rounded-full bg-ink-ghost mx-auto mb-5" />
+
+        <div className="flex items-center gap-4 mb-5">
+          <div
+            className="w-[52px] h-[52px] rounded-xl grid place-items-center shrink-0"
+            style={{ background: "rgba(210,115,79,0.12)", border: "1px solid rgba(210,115,79,0.25)" }}
+          >
+            <Icon name="heart" size={24} color="var(--accent-soft)" />
+          </div>
+          <div>
+            <div className="text-[17px] font-semibold text-ink-strong">Guarda este lugar</div>
+            <div className="text-[13.5px] font-light text-ink-soft mt-0.5">
+              Crea una cuenta gratis para guardar experiencias.
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={onCrearCuenta}
+          className="w-full h-14 rounded-full bg-accent text-white text-[15.5px] font-semibold shadow-[0_8px_24px_rgba(210,115,79,0.28)] mb-3"
+        >
+          Crear cuenta gratis
+        </button>
+        <button onClick={onCerrar} className="w-full h-11 text-[14px] text-ink-soft">
+          Ahora no
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const stored = readState();
   const [tab,      setTab]      = useState(stored.tab   || "home");
-  const [saved,    setSaved]    = useState(stored.saved || []);
   const [prefs,    setPrefs]    = useState(stored.prefs || null);
   const [open,     setOpen]     = useState(null);
   const [locId,    setLocId]    = useState(stored.locId || "actual");
@@ -46,6 +91,9 @@ export default function App() {
 
   // ── Perfil del usuario (tabla perfiles) ───────────────────────────────
   const { perfil, cargandoPerfil, guardarOnboarding } = usePerfil();
+
+  // ── Favoritos del usuario (tabla guardados) ───────────────────────────
+  const { estaGuardado, toggleGuardado, avisoInvitado, cerrarAviso } = useGuardados();
 
   // ── Modo invitado: eligió entrar sin cuenta ────────────────────────────
   const [modoInvitado, setModoInvitado] = useState(
@@ -72,16 +120,14 @@ export default function App() {
     }
   }, [perfil]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Persistir preferencias y navegación en localStorage
+  // Persistir preferencias y navegación en localStorage (ya no guardamos "saved" aquí;
+  // los favoritos viven en Supabase y se cargan desde GuardadosContext)
   useEffect(() => {
     localStorage.setItem(
       "huella_state",
-      JSON.stringify({ tab, saved, prefs, locId })
+      JSON.stringify({ tab, prefs, locId })
     );
-  }, [tab, saved, prefs, locId]);
-
-  const toggleSave = (id) =>
-    setSaved((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  }, [tab, prefs, locId]);
 
   // ── CASO 1: Supabase comprobando si hay sesión guardada ────────────────
   if (cargando) {
@@ -121,16 +167,12 @@ export default function App() {
           <Onboarding
             initialStep={1}
             onComplete={async (p) => {
-              // Actualizamos prefs locales para el filtro "Para ti" de OpenStreetMap
               setPrefs(p);
-              // Guardamos en Supabase (actualización optimista: la app avanza de inmediato)
               await guardarOnboarding({
                 intereses:      p.intereses,
                 forma_explorar: p.compania,
                 ritmo:          p.actividad,
               });
-              // Cuando perfil.onboarding_completado pasa a true, App re-renderiza
-              // y entra al CASO 5 automáticamente.
             }}
           />
         </div>
@@ -145,8 +187,10 @@ export default function App() {
         {tab === "home" && (
           <Home
             direction="editorial"
-            saved={saved}
-            onSave={toggleSave}
+            /* "saved" ya no es un array de ids sino la función estaGuardado(id) → bool */
+            saved={estaGuardado}
+            /* "onSave" recibe el objeto completo del lugar, no solo el id */
+            onSave={toggleGuardado}
             onOpen={setOpen}
             prefs={prefs}
             location={loc.name}
@@ -154,8 +198,15 @@ export default function App() {
           />
         )}
         {tab === "tours" && <ToursScreen location={loc.name} />}
+        {/* SavedScreen usa GuardadosContext directamente; onCrearCuenta lo necesita el invitado */}
         {tab === "saved" && (
-          <SavedScreen saved={saved} onSave={toggleSave} onOpen={setOpen} />
+          <SavedScreen
+            onOpen={setOpen}
+            onCrearCuenta={() => {
+              setModoInvitado(false);
+              localStorage.removeItem("huella_invitado");
+            }}
+          />
         )}
         {tab === "profile" && (
           <ProfileScreen
@@ -168,7 +219,6 @@ export default function App() {
             }
             onSavePrefs={setPrefs}
             onCrearCuenta={() => {
-              // El invitado quiere crear cuenta → salimos del modo invitado
               setModoInvitado(false);
               localStorage.removeItem("huella_invitado");
             }}
@@ -178,8 +228,10 @@ export default function App() {
         {open && (
           <DetailSheet
             exp={open}
-            saved={saved.includes(open.id)}
-            onSave={toggleSave}
+            saved={estaGuardado(open.id)}
+            /* Envolvemos toggleGuardado con el lugar completo para que
+               Detail.jsx pueda llamar onSave() sin conocer el objeto */
+            onSave={() => toggleGuardado(open)}
             onClose={() => setOpen(null)}
           />
         )}
@@ -188,6 +240,18 @@ export default function App() {
             current={locId}
             onPick={(l) => setLocId(l.id)}
             onClose={() => setLocSheet(false)}
+          />
+        )}
+
+        {/* Modal de invitado: aparece cuando un usuario sin cuenta toca el corazón */}
+        {avisoInvitado && (
+          <AvisoInvitado
+            onCerrar={cerrarAviso}
+            onCrearCuenta={() => {
+              cerrarAviso();
+              setModoInvitado(false);
+              localStorage.removeItem("huella_invitado");
+            }}
           />
         )}
       </div>

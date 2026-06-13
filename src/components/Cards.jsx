@@ -1,7 +1,7 @@
 /* HUELLA — variantes de tarjeta de experiencia (usadas por las direcciones de Home) */
 import { useRef, useState } from "react";
 import Icon from "./Icon.jsx";
-import PhotoSlot from "./PhotoSlot.jsx";
+// PhotoSlot solo se usa en el avatar del perfil; las imágenes de lugares son solo visuales
 import { CAT } from "../data/huella.js";
 import { CatSurface, MatchRing, MetaRow } from "./Shared.jsx";
 
@@ -37,8 +37,10 @@ export function FavBadge() {
   );
 }
 
-/* ---- swipeable photo carousel ---- */
-export function PhotoCarousel({ cat, expId, slot = false, h = 250, rounded = "rounded-xl", children }) {
+/* ---- carrusel de imagen de lugar (solo visual, sin subida de archivos) ----
+   Las imágenes de lugares vienen del sistema (gradientes de CatSurface).
+   Los usuarios no pueden cambiarlas: se quitó el PhotoSlot que había aquí. */
+export function PhotoCarousel({ cat, h = 250, rounded = "rounded-xl", children }) {
   const [idx, setIdx] = useState(0);
   const ref = useRef(null);
   const tints = ["transparent", "rgba(70,104,156,0.32)", "rgba(250,206,160,0.26)"];
@@ -59,10 +61,7 @@ export function PhotoCarousel({ cat, expId, slot = false, h = 250, rounded = "ro
         {tints.map((t, i) => (
           <div key={i} className="relative w-full h-full shrink-0 snap-start">
             <CatSurface cat={cat} className="w-full h-full">
-              {i === 0 && slot && expId && (
-                <PhotoSlot id={"img-" + expId} shape="rect"
-                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 1 }} />
-              )}
+              {/* Sin PhotoSlot: la imagen es solo visual, no editable por el usuario */}
               {t !== "transparent" && <div className="absolute inset-0 z-[2]" style={{ background: t, mixBlendMode: "soft-light" }}></div>}
             </CatSurface>
           </div>
@@ -111,7 +110,7 @@ export function ExploreCard({ exp, saved, onSave, onOpen }) {
   const fav = exp.rating >= 4.9;
   return (
     <CardTap onClick={() => onOpen(exp)} className="block w-full text-left">
-      <PhotoCarousel cat={exp.cat} expId={exp.id} slot={true} h={250}>
+      <PhotoCarousel cat={exp.cat} h={250}>
         <div className="absolute top-3 left-3 right-3 flex justify-between items-start z-[6]">
           {fav ? <FavBadge /> : <span></span>}
           <SaveBtn saved={saved} onToggle={onSave} />

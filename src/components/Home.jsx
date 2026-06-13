@@ -5,6 +5,7 @@ import { Chip } from "./Shared.jsx";
 import { ExploreCard, CarouselCard, FeedCard, CompactRow } from "./Cards.jsx";
 import { SECTIONS, EXP, byId } from "../data/huella.js";
 import { buscarPorCategoria, buscarParaTi } from "../services/lugares.js";
+import { useAuth } from "../context/AuthContext.jsx";
 
 function SectionHead({ title, sub, onMore }) {
   return (
@@ -77,10 +78,11 @@ const EXPLORE_TABS = [
   { k: "bienestar", icon: "sun", label: "Bienestar" },
 ];
 
-function CategoryBar({ active, onChange }) {
+// "tabs" es el array filtrado que se le pasa desde Home (puede excluir "Para ti" para invitados)
+function CategoryBar({ tabs, active, onChange }) {
   return (
     <div className="flex gap-[18px] overflow-x-auto px-[20px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {EXPLORE_TABS.map((t) => {
+      {tabs.map((t) => {
         const on = active === t.k;
         return (
           <button key={t.k} onClick={() => onChange(t.k)} className="shrink-0 flex flex-col items-center gap-1.5 pt-0.5 relative">
@@ -118,7 +120,8 @@ function SearchPill({ location, prefs, onChangeLocation }) {
   );
 }
 
-function ExploreTopBar({ location, prefs, active, onChange, onChangeLocation, scrolled }) {
+// Recibe "tabs": el array de categorías ya filtrado (sin "Para ti" para invitados)
+function ExploreTopBar({ location, prefs, active, onChange, onChangeLocation, scrolled, tabs }) {
   return (
     <div className="sticky top-0 z-20 pb-3"
       style={{
@@ -130,7 +133,7 @@ function ExploreTopBar({ location, prefs, active, onChange, onChangeLocation, sc
       <div className="pt-2.5 px-[18px] pb-3.5">
         <SearchPill location={location} prefs={prefs} onChangeLocation={onChangeLocation} />
       </div>
-      <CategoryBar active={active} onChange={onChange} />
+      <CategoryBar tabs={tabs} active={active} onChange={onChange} />
     </div>
   );
 }
@@ -175,9 +178,20 @@ function EstadoError({ mensaje }) {
 
 export default function Home({ direction, saved, onSave, onOpen, prefs, location, onChangeLocation }) {
   const name = "Mara";
-  const cardProps = (exp) => ({ exp, saved: saved.includes(exp.id), onSave: () => onSave(exp.id), onOpen });
+  // "saved" ahora es la función estaGuardado(id) del GuardadosContext (antes era un array)
+  // "onSave" recibe el objeto completo del lugar (antes recibía solo el id)
+  const cardProps = (exp) => ({ exp, saved: saved(exp.id), onSave: () => onSave(exp), onOpen });
   const [scrolled, setScrolled] = useState(false);
-  const [cat, setCat] = useState("para-ti");
+
+  const { esInvitado } = useAuth();
+  // Invitado no ve "Para ti": esa pestaña requiere intereses del onboarding, que no tiene.
+  // Las demás categorías (Naturaleza, Cultura…) sí están disponibles para todos.
+  const tabsDisponibles = esInvitado
+    ? EXPLORE_TABS.filter((t) => t.k !== "para-ti")
+    : EXPLORE_TABS;
+  // Categoría activa por defecto: registrado → "para-ti"; invitado → primera real ("naturaleza")
+  const [cat, setCat] = useState(esInvitado ? "naturaleza" : "para-ti");
+
   const onScroll = (e) => setScrolled(e.target.scrollTop > 8);
 
   // ── Estado del feed de la dirección "editorial" ────────────────────────
@@ -236,7 +250,7 @@ export default function Home({ direction, saved, onSave, onOpen, prefs, location
 
       {/* ---------- EDITORIAL (Explorar) ---------- */}
       {direction === "editorial" && (<>
-        <ExploreTopBar location={location} prefs={prefs} active={cat} onChange={setCat} onChangeLocation={onChangeLocation} scrolled={scrolled} />
+        <ExploreTopBar location={location} prefs={prefs} active={cat} onChange={setCat} onChangeLocation={onChangeLocation} scrolled={scrolled} tabs={tabsDisponibles} />
         <div className="flex flex-col gap-7 px-[18px] pt-5">
           {/* Estado: cargando O primer render antes de que lleguen datos */}
           {(cargando || feed === null) && [0, 1, 2].map((i) => <SkeletonCard key={i} />)}
