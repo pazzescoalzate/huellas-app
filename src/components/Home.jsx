@@ -101,27 +101,47 @@ function CategoryBar({ tabs, active, onChange }) {
   );
 }
 
-function SearchPill({ location, prefs, onChangeLocation }) {
-  const compania = (prefs && prefs.compania) || "Cualquiera";
+/* SearchPill — ancho completo, círculo coral con lupa + "Explorando / Ciudad" + chevron.
+   El botón de filtros está en el código pero oculto; cambiar "hidden" a "flex" para activarlo. */
+function SearchPill({ location, onChangeLocation }) {
   return (
-    <button onClick={onChangeLocation}
-      className="w-full flex items-center gap-3 pl-2 pr-2 py-2 rounded-full bg-bg3 border border-cardstroke shadow-elev2">
-      <span className="w-[42px] h-[42px] rounded-full grid place-items-center shrink-0 bg-accent">
-        <Icon name="search" size={19} color="var(--on-accent)" stroke={2.3} />
-      </span>
-      <span className="flex-1 min-w-0 text-left">
-        <span className="block text-[15px] font-semibold text-ink-strong leading-tight">¿A dónde vas?</span>
-        <span className="block text-[12.5px] text-ink-faint mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">{location} · Cuando sea · {compania}</span>
-      </span>
-      <span className="w-[40px] h-[40px] rounded-full grid place-items-center shrink-0 border border-cardstroke bg-white/[0.04]">
+    <>
+      {/* Botón principal: ocupa todo el ancho disponible */}
+      <button
+        onClick={onChangeLocation}
+        className="w-full flex items-center gap-3 pl-2 pr-4 py-2 rounded-full bg-bg3 border border-cardstroke shadow-elev2"
+      >
+        {/* Círculo coral sólido con lupa */}
+        <span className="w-[42px] h-[42px] rounded-full grid place-items-center shrink-0 bg-accent">
+          <Icon name="search" size={19} color="var(--on-accent)" stroke={2.3} />
+        </span>
+
+        <span className="flex-1 min-w-0 text-left">
+          {/* Antecedente pequeño */}
+          <span className="block text-[11px] font-medium text-ink-faint leading-none mb-[3px]">
+            Explorando
+          </span>
+          {/* Ciudad activa como protagonista */}
+          <span className="block text-[15px] font-semibold text-ink-strong leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
+            {location || "Elige tu ciudad"}
+          </span>
+        </span>
+
+        {/* Flecha hacia abajo: indica que se puede tocar para cambiar ciudad */}
+        <Icon name="chevDown" size={16} color="var(--ink-faint)" stroke={2} style={{ flexShrink: 0 }} />
+      </button>
+
+      {/* Botón de filtros — hidden: no ocupa espacio pero está en el código.
+          Para reactivarlo: cambiar "hidden" por "flex" */}
+      <button className="hidden w-[40px] h-[40px] rounded-full items-center justify-center shrink-0 border border-cardstroke bg-white/[0.04]">
         <Icon name="sliders" size={17} color="var(--ink)" />
-      </span>
-    </button>
+      </button>
+    </>
   );
 }
 
-// Recibe "tabs": el array de categorías ya filtrado (sin "Para ti" para invitados)
-function ExploreTopBar({ location, prefs, active, onChange, onChangeLocation, scrolled, tabs }) {
+// "prefs" se quitó del SearchPill (ya no muestra "Cuando sea · Con pareja")
+function ExploreTopBar({ location, active, onChange, onChangeLocation, scrolled, tabs }) {
   return (
     <div className="sticky top-0 z-20 pb-3"
       style={{
@@ -131,9 +151,35 @@ function ExploreTopBar({ location, prefs, active, onChange, onChangeLocation, sc
         boxShadow: scrolled ? "0 12px 32px rgba(0,0,0,0.32)" : "none",
         borderBottom: scrolled ? "1px solid var(--glass-stroke)" : "1px solid transparent" }}>
       <div className="pt-2.5 px-[18px] pb-3.5">
-        <SearchPill location={location} prefs={prefs} onChangeLocation={onChangeLocation} />
+        <SearchPill location={location} onChangeLocation={onChangeLocation} />
       </div>
       <CategoryBar tabs={tabs} active={active} onChange={onChange} />
+    </div>
+  );
+}
+
+/* ── Estado cuando el usuario aún no eligió ciudad ──────────────────────── */
+function SinCiudad({ onElegir }) {
+  return (
+    <div className="flex flex-col items-center justify-center text-center px-10 py-20">
+      <span
+        className="w-[72px] h-[72px] rounded-2xl grid place-items-center mb-5"
+        style={{ background: "rgba(210,115,79,0.10)", border: "1px solid rgba(210,115,79,0.25)" }}
+      >
+        <Icon name="pin" size={32} color="var(--accent-soft)" />
+      </span>
+      <h2 className="text-[20px] font-semibold text-ink-strong tracking-[-0.01em] mb-2">
+        ¿Dónde quieres explorar?
+      </h2>
+      <p className="text-[14px] font-light text-ink-soft leading-[1.5] mb-6 max-w-[260px]">
+        Elige una ciudad para descubrir sus experiencias únicas.
+      </p>
+      <button
+        onClick={onElegir}
+        className="h-12 px-6 rounded-full bg-accent text-white text-[15px] font-semibold shadow-[0_8px_24px_rgba(210,115,79,0.28)]"
+      >
+        Elegir ciudad
+      </button>
     </div>
   );
 }
@@ -209,6 +255,8 @@ export default function Home({ direction, saved, onSave, onOpen, prefs, location
   useEffect(() => {
     // Solo aplica a la dirección "editorial"; calm/compact usan datos estáticos
     if (direction !== "editorial") return;
+    // Sin ciudad elegida no buscamos nada (SinCiudad se muestra en el JSX)
+    if (!location) return;
 
     let cancelado = false;
 
@@ -250,16 +298,19 @@ export default function Home({ direction, saved, onSave, onOpen, prefs, location
 
       {/* ---------- EDITORIAL (Explorar) ---------- */}
       {direction === "editorial" && (<>
-        <ExploreTopBar location={location} prefs={prefs} active={cat} onChange={setCat} onChangeLocation={onChangeLocation} scrolled={scrolled} tabs={tabsDisponibles} />
+        {/* El SearchPill ya no recibe "prefs": se quitó "Cuando sea · Con pareja" */}
+        <ExploreTopBar location={location} active={cat} onChange={setCat} onChangeLocation={onChangeLocation} scrolled={scrolled} tabs={tabsDisponibles} />
         <div className="flex flex-col gap-7 px-[18px] pt-5">
+          {/* Sin ciudad elegida → invitar a seleccionar una */}
+          {!location && <SinCiudad onElegir={onChangeLocation} />}
           {/* Estado: cargando O primer render antes de que lleguen datos */}
-          {(cargando || feed === null) && [0, 1, 2].map((i) => <SkeletonCard key={i} />)}
+          {location && (cargando || feed === null) && [0, 1, 2].map((i) => <SkeletonCard key={i} />)}
           {/* Estado: error de red */}
-          {!cargando && feed !== null && errorMsg && <EstadoError mensaje={errorMsg} />}
+          {location && !cargando && feed !== null && errorMsg && <EstadoError mensaje={errorMsg} />}
           {/* Estado: sin resultados */}
-          {!cargando && feed !== null && !errorMsg && feed.length === 0 && <EstadoVacio />}
+          {location && !cargando && feed !== null && !errorMsg && feed.length === 0 && <EstadoVacio />}
           {/* Estado: resultados reales */}
-          {!cargando && feed !== null && !errorMsg && feed.map((exp, i) => (
+          {location && !cargando && feed !== null && !errorMsg && feed.map((exp, i) => (
             <div key={exp.id} className="rise" style={{ animationDelay: `${Math.min(i, 5) * 0.04}s` }}>
               <ExploreCard {...cardProps(exp)} />
             </div>

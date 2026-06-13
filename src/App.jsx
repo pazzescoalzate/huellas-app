@@ -10,7 +10,6 @@ import DetailSheet from "./components/Detail.jsx";
 import LocationSheet from "./components/Location.jsx";
 import AuthScreen from "./components/auth/AuthScreen.jsx";
 import Icon from "./components/Icon.jsx";
-import { LOCATIONS } from "./data/huella.js";
 import { useAuth } from "./context/AuthContext.jsx";
 import { usePerfil } from "./context/PerfilContext.jsx";
 import { useGuardados } from "./context/GuardadosContext.jsx";
@@ -82,15 +81,25 @@ export default function App() {
   const [tab,      setTab]      = useState(stored.tab   || "home");
   const [prefs,    setPrefs]    = useState(stored.prefs || null);
   const [open,     setOpen]     = useState(null);
-  const [locId,    setLocId]    = useState(stored.locId || "actual");
   const [locSheet, setLocSheet] = useState(false);
-  const loc = LOCATIONS.find((l) => l.id === locId) || LOCATIONS[0];
+
+  // Ciudad activa: objeto { id, name, region, lat, lon } o null si aún no eligió
+  // Se persiste en localStorage para recordarla entre sesiones
+  const [ciudad, setCiudad] = useState(stored.ciudad || null);
+
+  // Ciudades recientes para invitados (localStorage); los usuarios las tienen en Supabase
+  const [recientesGuest, setRecientesGuest] = useState(
+    () => {
+      try { return JSON.parse(localStorage.getItem("huella_recientes_ciudad") || "[]"); }
+      catch { return []; }
+    }
+  );
 
   // ── Sesión de Supabase ─────────────────────────────────────────────────
-  const { usuario, cargando } = useAuth();
+  const { usuario, cargando, esInvitado } = useAuth();
 
   // ── Perfil del usuario (tabla perfiles) ───────────────────────────────
-  const { perfil, cargandoPerfil, guardarOnboarding } = usePerfil();
+  const { perfil, cargandoPerfil, guardarOnboarding, agregarCiudadReciente } = usePerfil();
 
   // ── Favoritos del usuario (tabla guardados) ───────────────────────────
   const { estaGuardado, toggleGuardado, avisoInvitado, cerrarAviso } = useGuardados();
@@ -120,14 +129,39 @@ export default function App() {
     }
   }, [perfil]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Persistir preferencias y navegación en localStorage (ya no guardamos "saved" aquí;
-  // los favoritos viven en Supabase y se cargan desde GuardadosContext)
+  // Persistir preferencias, navegación y ciudad activa en localStorage
   useEffect(() => {
     localStorage.setItem(
       "huella_state",
-      JSON.stringify({ tab, prefs, locId })
+      JSON.stringify({ tab, prefs, ciudad })
     );
-  }, [tab, prefs, locId]);
+  }, [tab, prefs, ciudad]);
+
+  /* Guarda una ciudad en la lista de recientes:
+     - Usuario registrado → Supabase (PerfilContext)
+     - Invitado → localStorage de la sesión */
+  function agregarReciente(c) {
+    const MAX = 5;
+    if (!esInvitado) {
+      agregarCiudadReciente(c); // actualiza Supabase + perfil en memoria
+    } else {
+      const sinRepetir = recientesGuest.filter((r) => r.id !== c.id);
+      const nueva = [c, ...sinRepetir].slice(0, MAX);
+      setRecientesGuest(nueva);
+      localStorage.setItem("huella_recientes_ciudad", JSON.stringify(nueva));
+    }
+  }
+
+  /* Cuando el usuario selecciona una ciudad en el LocationSheet */
+  function handlePickCiudad(c) {
+    setCiudad(c);
+    agregarReciente(c);
+  }
+
+  // Lista de recientes que se pasa al LocationSheet
+  const recientes = esInvitado
+    ? recientesGuest
+    : (perfil?.ciudades_recientes || []);
 
   // ── CASO 1: Supabase comprobando si hay sesión guardada ────────────────
   if (cargando) {
@@ -187,17 +221,15 @@ export default function App() {
         {tab === "home" && (
           <Home
             direction="editorial"
-            /* "saved" ya no es un array de ids sino la función estaGuardado(id) → bool */
             saved={estaGuardado}
-            /* "onSave" recibe el objeto completo del lugar, no solo el id */
             onSave={toggleGuardado}
             onOpen={setOpen}
             prefs={prefs}
-            location={loc.name}
+            location={ciudad?.name || null}
             onChangeLocation={() => setLocSheet(true)}
           />
         )}
-        {tab === "tours" && <ToursScreen location={loc.name} />}
+        {tab === "tours" && <ToursScreen location={ciudad?.name || ""} />}
         {/* SavedScreen usa GuardadosContext directamente; onCrearCuenta lo necesita el invitado */}
         {tab === "saved" && (
           <SavedScreen
@@ -237,8 +269,9 @@ export default function App() {
         )}
         {locSheet && (
           <LocationSheet
-            current={locId}
-            onPick={(l) => setLocId(l.id)}
+            current={ciudad}
+            recientes={recientes}
+            onPick={handlePickCiudad}
             onClose={() => setLocSheet(false)}
           />
         )}

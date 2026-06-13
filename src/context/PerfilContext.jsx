@@ -71,8 +71,30 @@ export function PerfilProvider({ children }) {
     }
   }
 
+  /* Añade una ciudad al inicio de la lista "ciudades_recientes" del perfil.
+     Si ya estaba, la mueve al frente. Guarda máximo 5 ciudades.
+     Cada ciudad es { id, name, region, lat, lon }. */
+  async function agregarCiudadReciente(ciudad) {
+    if (!usuario) return;
+
+    // Quitamos la ciudad si ya existe (para moverla al frente)
+    const anteriores = perfil?.ciudades_recientes || [];
+    const sinRepetir  = anteriores.filter((c) => c.id !== ciudad.id);
+    const nuevaLista  = [ciudad, ...sinRepetir].slice(0, 5);
+
+    // Actualización optimista en memoria
+    setPerfil((prev) => ({ ...prev, ciudades_recientes: nuevaLista }));
+
+    try {
+      await actualizarPerfil(usuario.id, { ciudades_recientes: nuevaLista });
+    } catch (err) {
+      console.error("[huella] No se pudo guardar ciudad reciente:", err.message);
+      // La actualización optimista sigue activa; si el usuario recarga se pierde.
+    }
+  }
+
   return (
-    <PerfilContext.Provider value={{ perfil, cargandoPerfil, guardarOnboarding, setPerfil }}>
+    <PerfilContext.Provider value={{ perfil, cargandoPerfil, guardarOnboarding, setPerfil, agregarCiudadReciente }}>
       {children}
     </PerfilContext.Provider>
   );
