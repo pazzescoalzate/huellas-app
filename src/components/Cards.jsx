@@ -127,7 +127,10 @@ export function ExploreCard({ exp, saved, onSave, onOpen }) {
           )}
         </div>
         <div className="text-[14px] text-ink-soft mt-0.5">{exp.place}</div>
-        <div className="text-[14px] text-ink-faint mt-0.5">{exp.dist} de ti · {exp.time === "Menos de 2 h" ? "Disponible hoy" : exp.time}</div>
+        {/* zona: barrio real o zona cardinal. "de ti" eliminado: no es distancia al usuario */}
+        <div className="text-[14px] text-ink-faint mt-0.5">
+          {[exp.zona, exp.time === "Menos de 2 h" ? "Disponible hoy" : exp.time].filter(Boolean).join(" · ")}
+        </div>
         <div className="text-[15px] font-semibold text-ink-strong mt-1.5">{exp.tagline}</div>
       </div>
     </CardTap>
@@ -145,10 +148,13 @@ export function HeroCard({ exp, saved, onSave, onOpen }) {
         </div>
         <div className="mt-auto px-[18px] pt-5 pb-[18px]"
           style={{ background: "linear-gradient(to top, rgba(10,8,7,0.78), rgba(10,8,7,0.12) 70%, transparent)" }}>
-          <div className="inline-flex items-center gap-1.5 mb-2.5 pl-1.5 pr-2.5 py-[5px] rounded-full bg-[rgba(245,242,237,0.14)] border border-white/[0.18]">
-            <MatchRing value={exp.match} size={26} />
-            <span className="text-[12px] font-semibold text-white">{exp.match}% compatible contigo</span>
-          </div>
+          {/* Badge de compatibilidad: solo si hay intereses del usuario calculados */}
+          {exp.match != null && (
+            <div className="inline-flex items-center gap-1.5 mb-2.5 pl-1.5 pr-2.5 py-[5px] rounded-full bg-[rgba(245,242,237,0.14)] border border-white/[0.18]">
+              <MatchRing value={exp.match} size={26} />
+              <span className="text-[12px] font-semibold text-white">{exp.match}% compatible contigo</span>
+            </div>
+          )}
           <div className="text-[25px] font-semibold text-white tracking-[-0.015em] leading-[1.1]">{exp.title}</div>
           <div className="text-[14px] font-light text-white/80 my-2 mb-3.5 max-w-[92%]">{exp.blurb}</div>
           <MetaRow exp={exp} color="rgba(255,255,255,0.86)" />
@@ -198,10 +204,13 @@ export function FeedCard({ exp, saved, onSave, onOpen }) {
               <div className="text-[22px] font-semibold text-white tracking-[-0.015em] leading-[1.12]">{exp.title}</div>
               <div className="mt-2.5"><MetaRow exp={exp} color="rgba(255,255,255,0.84)" /></div>
             </div>
-            <div className="flex flex-col items-center gap-[3px]">
-              <MatchRing value={exp.match} size={42} />
-              <span className="text-[9px] font-medium text-white/70">compatible</span>
-            </div>
+            {/* Anillo de compatibilidad: solo si hay intereses calculados */}
+            {exp.match != null && (
+              <div className="flex flex-col items-center gap-[3px]">
+                <MatchRing value={exp.match} size={42} />
+                <span className="text-[9px] font-medium text-white/70">compatible</span>
+              </div>
+            )}
           </div>
         </div>
       </CatSurface>
@@ -218,8 +227,12 @@ export function CompactRow({ exp, saved, onSave, onOpen }) {
       <div className="flex-1 min-w-0 flex flex-col justify-center">
         <div className="flex justify-between items-center gap-2">
           <span className="text-[15px] font-semibold text-ink-strong tracking-[-0.01em] whitespace-nowrap overflow-hidden text-ellipsis">{exp.title}</span>
-          <span className="inline-flex items-center gap-1 shrink-0 text-[11px] font-semibold text-accent-soft">
-            <span className="w-[5px] h-[5px] rounded-full bg-accent-soft"/>{exp.match}%</span>
+          {/* Porcentaje de compatibilidad: solo si existe (oculto para invitados) */}
+          {exp.match != null && (
+            <span className="inline-flex items-center gap-1 shrink-0 text-[11px] font-semibold text-accent-soft">
+              <span className="w-[5px] h-[5px] rounded-full bg-accent-soft"/>{exp.match}%
+            </span>
+          )}
         </div>
         <div className="text-[12px] text-ink-faint mt-0.5 mb-[7px]">{exp.place}</div>
         <MetaRow exp={exp} gap={10} />

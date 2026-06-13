@@ -60,13 +60,15 @@ export function Chip({ children, active, onClick, icon }) {
   );
 }
 
-/* ---------- meta row (distance · time · level) ---------- */
+/* ---------- meta row (zona · tiempo · nivel) ---------- */
 export function MetaRow({ exp, color = "var(--ink-soft)", gap = 12 }) {
+  // "zona" reemplaza "dist": muestra barrio/sector real, no km inventados.
+  // Filtramos items sin valor para no mostrar un ícono vacío.
   const items = [
-    { icon: "pin", t: exp.dist },
+    { icon: "pin",   t: exp.zona },
     { icon: "clock", t: exp.time },
     { icon: "route", t: exp.level },
-  ];
+  ].filter((it) => it.t);
   return (
     <div className="flex items-center flex-wrap" style={{ gap }}>
       {items.map((it, i) => (

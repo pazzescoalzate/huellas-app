@@ -4,7 +4,7 @@ import Icon from "./Icon.jsx";
 import { Chip } from "./Shared.jsx";
 import { ExploreCard, CarouselCard, FeedCard, CompactRow } from "./Cards.jsx";
 import { SECTIONS, EXP, byId } from "../data/huella.js";
-import { buscarPorCategoria, buscarParaTi } from "../services/lugares.js";
+import { buscarPorCategoria, buscarParaTi, calcularMatch } from "../services/lugares.js";
 import { useAuth } from "../context/AuthContext.jsx";
 
 function SectionHead({ title, sub, onMore }) {
@@ -273,6 +273,14 @@ export default function Home({ direction, saved, onSave, onOpen, prefs, location
           resultados = await buscarParaTi(intereses, location);
         } else {
           resultados = await buscarPorCategoria(cat, location);
+          // buscarPorCategoria devuelve match:null; aplicamos la compatibilidad real
+          // ahora que tenemos los intereses del usuario disponibles en este componente.
+          if (prefs?.intereses?.length) {
+            resultados = resultados.map((r) => ({
+              ...r,
+              match: calcularMatch(r.cat, prefs.intereses),
+            }));
+          }
         }
         if (!cancelado) setFeed(resultados);
       } catch (err) {

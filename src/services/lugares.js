@@ -149,6 +149,8 @@ async function fetchOverpass(query) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 // Fórmula de Haversine: distancia real en km entre dos coordenadas GPS
+// Sigue siendo necesaria para ordenar los resultados de más cercanos a más lejanos
+// y para el cálculo de zona cuando no hay etiqueta de barrio en OSM.
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -161,17 +163,124 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Formatea kilómetros como texto legible: 2.35 → "2,4 km"
-function fmtDist(km) {
-  if (km < 0.5) return `${Math.round(km * 1000)} m`;
-  return `${km.toFixed(1).replace(".", ",")} km`;
+// Ángulo (en grados, 0 = Norte, 90 = Este, 180 = Sur, 270 = Oeste) desde el
+// centro de la ciudad hasta el lugar. Sirve para el fallback de zona cardinal.
+function calcularBearing(lat1, lon1, lat2, lon2) {
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const rlat1 = (lat1 * Math.PI) / 180;
+  const rlat2 = (lat2 * Math.PI) / 180;
+  const y = Math.sin(dLon) * Math.cos(rlat2);
+  const x = Math.cos(rlat1) * Math.sin(rlat2) - Math.sin(rlat1) * Math.cos(rlat2) * Math.cos(dLon);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
-// Nivel de actividad según distancia al centro de la ciudad
-function nivelActividad(km) {
-  if (km < 3)  return "Relajado";
-  if (km < 10) return "Moderado";
-  return "Activo";
+// Devuelve el nombre de la dirección cardinal en español
+// Usamos "oriente/occidente" porque la app está pensada para Latinoamérica
+function dirCardinal(bearing) {
+  if (bearing >= 315 || bearing < 45)  return "norte";
+  if (bearing >= 45  && bearing < 135) return "oriente";
+  if (bearing >= 135 && bearing < 225) return "sur";
+  return "occidente";
+}
+
+// Zona calculada como fallback cuando OSM no trae etiqueta de barrio.
+// Umbrales elegidos para ser razonables en ciudades medianas (tipo Pereira o Manizales).
+// Para ciudades muy grandes (Bogotá, Buenos Aires) el umbral de "Centro" puede quedar
+// pequeño; para pueblos pequeños "Afueras" puede sonar exagerado. Es una aproximación.
+//   < 1 km del centro → "Centro"
+//   1–4 km            → "Zona norte/sur/oriente/occidente"
+//   4–8 km            → "Afueras norte/sur/oriente/occidente"
+function zonaDescrita(distKm, bearing) {
+  if (distKm < 1.0)  return "Centro";
+  const dir = dirCardinal(bearing);
+  if (distKm < 4.0)  return `Zona ${dir}`;
+  return `Afueras ${dir}`;
+}
+
+// Determina la zona de referencia del lugar. Prioridad:
+//   1. addr:neighbourhood  → barrio específico (ej: "Chapinero", "Usaquén")
+//   2. addr:suburb         → colonia o barrio más amplio
+//   3. addr:quarter        → sector o cuartel
+//   4. addr:district       → distrito
+//   5. is_in:suburb        → etiqueta legacy de OSM, menos frecuente
+//   6. Zona calculada      → fallback usando distancia y ángulo desde el centro
+// Si ninguna opción está disponible, devuelve null para no mostrar nada.
+function zonaDeReferencia(tags, distKm, latCiudad, lonCiudad, latLugar, lonLugar) {
+  const osm =
+    tags["addr:neighbourhood"] ||
+    tags["addr:suburb"]        ||
+    tags["addr:quarter"]       ||
+    tags["addr:district"]      ||
+    tags["is_in:suburb"]       ||
+    null;
+  if (osm) return osm;
+
+  // Fallback: calcular zona desde el centro de la ciudad
+  const bearing = calcularBearing(latCiudad, lonCiudad, latLugar, lonLugar);
+  return zonaDescrita(distKm, bearing);
+}
+
+// Nivel de actividad según la categoría del lugar.
+// Antes se derivaba de la distancia al centro (lo cual no tiene sentido semántico:
+// un parque lejano no es más "activo" que uno cercano). Ahora refleja la naturaleza
+// de la actividad: aventura/naturaleza requieren más esfuerzo que un café o mirador.
+const NIVEL_CAT = {
+  aventura:    "Activo",
+  naturaleza:  "Activo",
+  senderismo:  "Activo",    // cat de datos mock, no mapeada a OSM pero puede aparecer
+  cultura:     "Moderado",
+  bienestar:   "Moderado",
+  fotografia:  "Moderado",  // cat de datos mock
+  gastronomia: "Relajado",
+  miradores:   "Relajado",
+  cafes:       "Relajado",
+  urbano:      "Relajado",  // cat de datos mock
+};
+function nivelPorCategoria(cat) {
+  return NIVEL_CAT[cat] || "Relajado";
+}
+
+// Categorías relacionadas entre sí (comparten perfil de usuario).
+// Se usan para calcular una compatibilidad parcial cuando el lugar no coincide
+// exactamente con ningún interés del usuario pero sí con algo cercano.
+const CAT_RELACIONADAS = {
+  naturaleza:  ["aventura", "senderismo"],
+  aventura:    ["naturaleza", "senderismo"],
+  senderismo:  ["naturaleza", "aventura"],
+  cultura:     ["miradores", "fotografia"],
+  miradores:   ["cultura", "fotografia"],
+  fotografia:  ["miradores", "naturaleza"],
+  gastronomia: ["cafes"],
+  cafes:       ["gastronomia", "bienestar"],
+  bienestar:   ["cafes"],
+  urbano:      ["cultura", "cafes"],
+};
+
+// Calcula la compatibilidad real del lugar con los intereses del usuario.
+//   • null           → usuario sin intereses (invitado o perfil vacío): no mostrar %
+//   • 92             → coincidencia directa: la categoría del lugar está en sus intereses
+//   • 74             → coincidencia relacionada fuerte (≥ 2 categorías relacionadas en sus intereses)
+//   • 62             → coincidencia relacionada débil (1 categoría relacionada)
+//   • 45             → sin relación con ningún interés del usuario
+// Los valores son consecuencia del cálculo, no números inventados.
+export function calcularMatch(cat, intereses) {
+  if (!intereses?.length) return null;
+
+  // Convertir etiquetas de interés (del onboarding) a claves de categoría OSM
+  const catsInteres = intereses.map((i) => INTERES_A_CAT[i]).filter(Boolean);
+  if (!catsInteres.length) return null;
+
+  // Coincidencia directa
+  if (catsInteres.includes(cat)) return 92;
+
+  // Coincidencia relacionada: contar cuántas categorías relacionadas tiene el usuario
+  const relacionadas = CAT_RELACIONADAS[cat] || [];
+  const coincRelacionadas = relacionadas.filter((r) => catsInteres.includes(r)).length;
+  if (coincRelacionadas >= 2) return 74;
+  if (coincRelacionadas === 1) return 62;
+
+  // Sin relación
+  return 45;
 }
 
 // Tiempo estimado de visita por categoría
@@ -285,13 +394,17 @@ export async function geocodificarCiudad(ciudad) {
 
    Forma normalizada de cada lugar (compatible con ExploreCard, CarouselCard...):
      { id, nombre, tipo, lat, lon, distanciaKm, web, imagen,
-       title, place, cat, dist, time, level, match, rating, tagline, blurb,
+       title, place, cat, zona, time, level, match, rating, tagline, blurb,
        insight, modules }
 
    NOTA rating: OSM no tiene calificaciones. Siempre null (ExploreCard lo omite).
-   NOTA match:  placeholder (80). TODO: cruzar con prefs.intereses del usuario.
+   NOTA match:  null aquí; se aplica desde fuera cuando hay intereses del usuario.
+                Usa calcularMatch(cat, intereses) exportada desde este módulo.
+   NOTA zona:   reemplaza el anterior campo "dist". Muestra barrio OSM o zona
+                cardinal calculada. No dice "X km de ti" porque no es la distancia
+                al usuario, sino al centro de la ciudad.
 
-   Ahora usa fetchOverpass() que aplica failover, backoff y timeout.
+   Usa fetchOverpass() que aplica failover, backoff y timeout.
    ============================================================================ */
 export async function buscarPorCategoria(categoria, ciudad) {
   const cacheKey = `cat:${categoria}:${ciudad}`;
@@ -350,11 +463,16 @@ export async function buscarPorCategoria(categoria, ciudad) {
         title:   normalizado.nombre,
         place:   t["addr:city"] || t["addr:suburb"] || ciudad,
         cat:     categoria,
-        dist:    fmtDist(distKm),
+        // zona: barrio/sector real de OSM, o zona cardinal calculada como fallback.
+        // Reemplaza el antiguo "dist" (que mostraba km desde el centro de la ciudad,
+        // lo cual era engañoso porque no es la distancia al usuario).
+        zona:    zonaDeReferencia(t, distKm, lat, lon, elLat, elLon),
         time:    TIEMPO_CAT[categoria] || "Menos de 2 h",
-        level:   nivelActividad(distKm),
-        match:   80,   // placeholder — ver NOTA arriba
-        rating:  null, // no disponible en OSM — ver NOTA arriba
+        // level: ahora refleja la naturaleza de la actividad, no la distancia
+        level:   nivelPorCategoria(categoria),
+        // match: null aquí; buscarParaTi y Home.jsx lo calculan con intereses reales
+        match:   null,
+        rating:  null, // no disponible en OSM
         tagline: buildTagline(categoria, t),
         blurb:   t.description || `${t.name}, en ${t["addr:city"] || ciudad}.`,
         insight: INSIGHT_CAT[categoria] || "Disfruta este lugar con tranquilidad.",
@@ -403,13 +521,21 @@ export async function buscarParaTi(intereses, ciudad) {
 
   // Intercalar arrays: [cat0[0], cat1[0], cat2[0], cat0[1], cat1[1], ...]
   // Así el feed muestra variedad en lugar de agrupar todo por categoría
-  const resultado = [];
+  const intercalado = [];
   const maxLen = Math.max(...porCategoria.map((a) => a.length));
   for (let i = 0; i < maxLen; i++) {
     for (const arr of porCategoria) {
-      if (arr[i]) resultado.push(arr[i]);
+      if (arr[i]) intercalado.push(arr[i]);
     }
   }
+
+  // Aplicar compatibilidad real ahora que tenemos los intereses del usuario.
+  // Cada lugar tiene su propia categoría, así que el % varía según qué tan
+  // cerca está esa categoría de lo que le gusta al usuario.
+  const resultado = intercalado.map((r) => ({
+    ...r,
+    match: calcularMatch(r.cat, intereses),
+  }));
 
   cache.set(cacheKey, resultado);
   return resultado;

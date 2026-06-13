@@ -17,12 +17,15 @@ function filaALugar(g) {
     tipo:        g.lugar_categoria,
     lat:         g.lugar_lat,
     lon:         g.lugar_lon,
-    // Los campos de OSM (dist, place, modules…) no se almacenan en Supabase
+    // Los campos de OSM no se almacenan en Supabase: quedan vacíos o null.
+    // "zona" reemplaza "dist" (campo renombrado en toda la app).
+    // "match" es null porque aquí no tenemos el contexto de intereses del usuario;
+    // las tarjetas de guardados no muestran compatibilidad (null-guard en Cards/Detail).
     place:       "",
-    dist:        "",
+    zona:        null,
     time:        "",
     level:       "",
-    match:       80,
+    match:       null,
     rating:      null,
     tagline:     "",
     blurb:       g.lugar_nombre,

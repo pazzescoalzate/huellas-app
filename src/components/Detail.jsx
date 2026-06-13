@@ -85,9 +85,12 @@ function DetailMap({ exp, onDirections }) {
     <div>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-[16px] font-semibold text-ink-strong">Ubicación</h3>
-        <span className="inline-flex items-center gap-[5px] text-[13px] font-light text-ink-soft">
-          <Icon name="pin" size={14} color="var(--accent-soft)" /> {exp.dist} de ti
-        </span>
+        {/* zona: barrio/sector real de OSM. Omitido si no hay dato. */}
+        {exp.zona && (
+          <span className="inline-flex items-center gap-[5px] text-[13px] font-light text-ink-soft">
+            <Icon name="pin" size={14} color="var(--accent-soft)" /> {exp.zona}
+          </span>
+        )}
       </div>
       <button onClick={onDirections} className="block w-full h-[168px] relative rounded-lg overflow-hidden border border-cardstroke shadow-elev1">
         <svg viewBox="0 0 360 168" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 w-full h-full">
@@ -174,13 +177,16 @@ export default function DetailSheet({ exp, saved, onSave, onClose }) {
           </PhotoCarousel>
 
           <div className="px-[22px] py-5 flex flex-col gap-6">
-            <div className="flex items-center gap-3.5 px-4 py-3.5 rounded-lg bg-[rgba(210,115,79,0.1)] border border-[rgba(210,115,79,0.24)]">
-              <MatchRing value={exp.match} size={48} />
-              <div className="flex-1">
-                <div className="text-[15px] font-semibold text-ink-strong">{exp.match}% compatible contigo</div>
-                <div className="text-[12.5px] font-light text-ink-soft mt-0.5">Por tus intereses y tu forma de explorar</div>
+            {/* Bloque de compatibilidad: oculto si no hay intereses (invitado o perfil vacío) */}
+            {exp.match != null && (
+              <div className="flex items-center gap-3.5 px-4 py-3.5 rounded-lg bg-[rgba(210,115,79,0.1)] border border-[rgba(210,115,79,0.24)]">
+                <MatchRing value={exp.match} size={48} />
+                <div className="flex-1">
+                  <div className="text-[15px] font-semibold text-ink-strong">{exp.match}% compatible contigo</div>
+                  <div className="text-[12.5px] font-light text-ink-soft mt-0.5">Por tus intereses y tu forma de explorar</div>
+                </div>
               </div>
-            </div>
+            )}
 
             <MetaRow exp={exp} color="var(--ink)" gap={18} />
 
