@@ -16,14 +16,16 @@ function CardTap({ onClick, className = "", style, children }) {
   );
 }
 
-/* ---- Airbnb-style heart ---- */
+/* ---- Botón "Por visitar" (bandera) sobre las tarjetas ---- */
+// Bandera = "quiero ir / por visitar". El corazón queda solo para "Ya estuve".
+// Rellena en coral cuando está guardado; semitransparente cuando no.
 export function SaveBtn({ saved, onToggle }) {
   return (
     <button onClick={(e) => { e.stopPropagation(); onToggle(); }}
       className="shrink-0 grid place-items-center transition-transform duration-150 active:scale-90"
       style={{ filter: "drop-shadow(0 2px 5px rgba(0,0,0,0.45))" }}>
-      <Icon name="heart" size={27} fill={saved ? "var(--accent)" : "rgba(20,16,14,0.42)"}
-        color="#fff" stroke={2} />
+      <Icon name="bookmark" size={26} fill={saved ? "var(--accent)" : "rgba(20,16,14,0.42)"}
+        color="#fff" stroke={saved ? 0 : 2} />
     </button>
   );
 }

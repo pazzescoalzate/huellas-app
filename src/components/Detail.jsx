@@ -1,10 +1,12 @@
 /* HUELLA — detail sheet (glass overlay) */
 import { useState } from "react";
 import Icon from "./Icon.jsx";
+
 import { MatchRing, MetaRow } from "./Shared.jsx";
 import { PhotoCarousel, CatTag, CAT_ICON } from "./Cards.jsx";
 import { NavSheet, ShareSheet } from "./Actions.jsx";
 import { CAT } from "../data/huella.js";
+import MapaLugar from "./Mapa.jsx";
 
 function ModuleGrid({ exp }) {
   const entries = Object.entries(exp.modules || {});
@@ -78,9 +80,70 @@ function AIBlock({ exp }) {
   );
 }
 
-/* ---------- mini-mapa de ubicación (ficha) ---------- */
+/* ---------- fila de acciones tipo chip (estilo Google Maps) ---------------- */
+// Dos acciones del lugar alineadas con el lenguaje de Google Maps:
+//   · "Por visitar" → bandera 🚩 coral (deseo: "quiero ir algún día")
+//   · "Ya estuve"  → corazón ❤️ verde  (memoria: "ya lo viví")
+// Colores distintos a propósito: coral = futuro, verde = pasado.
+function FilaAcciones({ saved, onSave, visited, onVisit }) {
+  return (
+    <div className="flex gap-2.5">
+
+      {/* Chip "Por visitar" — bandera coral */}
+      <button
+        onClick={onSave}
+        className={
+          "flex-1 flex items-center justify-center gap-[7px] h-[44px] rounded-xl border text-[14px] font-medium " +
+          (saved
+            ? "bg-[rgba(210,115,79,0.16)] border-accent text-accent-soft"
+            : "bg-white/[0.07] border-cardstroke text-ink")
+        }
+      >
+        <Icon
+          name="bookmark"
+          size={16}
+          fill={saved ? "var(--accent-soft)" : "none"}
+          color={saved ? "var(--accent-soft)" : "var(--ink)"}
+          stroke={saved ? 0 : 1.8}
+        />
+        Por visitar
+      </button>
+
+      {/* Chip "Ya estuve" — corazón verde */}
+      <button
+        onClick={onVisit}
+        className={
+          "flex-1 flex items-center justify-center gap-[7px] h-[44px] rounded-xl border text-[14px] font-medium " +
+          (visited ? "text-[#4A9E62]" : "bg-white/[0.07] border-cardstroke text-ink")
+        }
+        style={
+          visited
+            ? { background: "rgba(72,158,98,0.13)", borderColor: "rgba(72,158,98,0.35)" }
+            : {}
+        }
+      >
+        <Icon
+          name="heart"
+          size={16}
+          fill={visited ? "#4A9E62" : "none"}
+          color={visited ? "#4A9E62" : "var(--ink)"}
+          stroke={visited ? 0 : 1.8}
+        />
+        Ya estuve
+      </button>
+
+    </div>
+  );
+}
+
+/* ---------- sección de ubicación con mapa real ----------------------------- */
+// Reemplaza el SVG ilustrativo por un mapa real de Leaflet + OpenStreetMap.
+// MapaLugar maneja:
+//   · Mini-mapa dentro de la ficha (mismo alto de 168px)
+//   · Pantalla completa al tocar "Ampliar"
+//   · Placeholder si el lugar no tiene coordenadas
+//   · Botón "Cómo llegar" sobre el mini-mapa (llama a onDirections igual que antes)
 function DetailMap({ exp, onDirections }) {
-  const grad = (CAT[exp.cat] || {}).grad || "var(--g-urbano)";
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -92,45 +155,22 @@ function DetailMap({ exp, onDirections }) {
           </span>
         )}
       </div>
-      <button onClick={onDirections} className="block w-full h-[168px] relative rounded-lg overflow-hidden border border-cardstroke shadow-elev1">
-        <svg viewBox="0 0 360 168" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 w-full h-full">
-          <rect width="360" height="168" fill="#14181E"></rect>
-          <path d="M276 0 C288 40 320 56 360 60 L360 168 L250 168 C268 120 262 70 276 0 Z" fill="#1B2736"></path>
-          <path d="M0 110 C70 102 140 120 200 132 C238 140 256 150 262 168" fill="none" stroke="#1F2E40" strokeWidth="7" strokeLinecap="round"></path>
-          <ellipse cx="84" cy="40" rx="50" ry="30" fill="#1A221C"></ellipse>
-          <ellipse cx="200" cy="92" rx="38" ry="24" fill="#19211B"></ellipse>
-          <path d="M0 70 C90 64 180 78 276 66" fill="none" stroke="rgba(245,242,237,0.12)" strokeWidth="2.4"></path>
-          <path d="M120 0 C128 60 116 120 134 168" fill="none" stroke="rgba(245,242,237,0.09)" strokeWidth="2"></path>
-          <path d="M0 130 C60 126 110 108 160 92 C196 80 220 80 250 86" fill="none" stroke="rgba(245,242,237,0.06)" strokeWidth="1.6"></path>
-          <path d="M40 0 C56 36 92 56 110 92 M210 0 C206 40 196 70 180 92" fill="none" stroke="rgba(245,242,237,0.05)" strokeWidth="1.3"></path>
-          <g fill="rgba(245,242,237,0.035)">
-            <rect x="150" y="40" width="16" height="11" rx="1.5"></rect>
-            <rect x="170" y="38" width="11" height="13" rx="1.5"></rect>
-            <rect x="152" y="56" width="12" height="10" rx="1.5"></rect>
-            <rect x="170" y="55" width="14" height="11" rx="1.5"></rect>
-          </g>
-        </svg>
-        <span className="absolute left-1/2 top-1/2 flex flex-col items-center" style={{ transform: "translate(-50%, -100%)" }}>
-          <span className="w-[38px] h-[38px] grid place-items-center"
-            style={{ borderRadius: "50% 50% 50% 4px", background: grad, border: "2px solid rgba(255,255,255,0.9)", boxShadow: "0 6px 16px rgba(0,0,0,0.5)", transform: "rotate(-45deg)" }}>
-            <span className="grid place-items-center" style={{ transform: "rotate(45deg)" }}>
-              <Icon name={CAT_ICON[exp.cat] || "pin"} size={17} color="#fff" stroke={2} />
-            </span>
-          </span>
-          <span className="w-[7px] h-[3px] rounded-[50%] bg-black/50 mt-0.5 blur-[1px]"></span>
-        </span>
-        <span className="glass absolute left-3 bottom-3 px-[13px] py-2 rounded-full flex items-center gap-[7px] text-[12.5px] font-medium text-ink-strong">
-          <Icon name="pin" size={13} color="var(--accent-soft)" /> {exp.place}
-        </span>
-        <span className="glass absolute right-3 bottom-3 px-[13px] py-2 rounded-full flex items-center gap-1.5 text-[12.5px] font-semibold text-accent-soft">
-          <Icon name="route" size={14} color="var(--accent-soft)" stroke={2} /> Cómo llegar
-        </span>
-      </button>
+
+      {/* key por coordenadas: fuerza un mapa fresco si se abre un lugar diferente
+          sin que DetailSheet se desmonte (ej. navegando de place A a place B) */}
+      <MapaLugar
+        key={`${exp.lat}-${exp.lon}`}
+        lat={exp.lat}
+        lon={exp.lon}
+        titulo={exp.title}
+        zona={exp.zona}
+        onDirections={onDirections}
+      />
     </div>
   );
 }
 
-export default function DetailSheet({ exp, saved, onSave, onClose }) {
+export default function DetailSheet({ exp, saved, onSave, visited, onVisit, onClose }) {
   const [closing, setClosing] = useState(false);
   const [nav, setNav] = useState(false);
   const [share, setShare] = useState(false);
@@ -188,6 +228,14 @@ export default function DetailSheet({ exp, saved, onSave, onClose }) {
               </div>
             )}
 
+            {/* Fila de chips: Guardar + Ya estuve, siempre visible tras el título */}
+            <FilaAcciones
+              saved={saved}
+              onSave={onSave}
+              visited={visited}
+              onVisit={onVisit}
+            />
+
             <MetaRow exp={exp} color="var(--ink)" gap={18} />
 
             <p className="text-[15px] font-light text-ink leading-[1.6]">{exp.blurb}</p>
@@ -224,17 +272,15 @@ export default function DetailSheet({ exp, saved, onSave, onClose }) {
           </div>
         </div>
 
-        <div className="glass absolute left-0 right-0 bottom-0 z-[5] rounded-none border-x-0 border-b-0 flex items-center gap-3"
+        {/* Barra inferior: solo "Cómo llegar", protagonista y a todo el ancho.
+            Guardar/Ya estuve están arriba en FilaAcciones.
+            Compartir está arriba junto al botón de volver (sin duplicado). */}
+        <div className="glass absolute left-0 right-0 bottom-0 z-[5] rounded-none border-x-0 border-b-0"
           style={{ padding: "12px 18px calc(12px + env(safe-area-inset-bottom))" }}>
-          <button onClick={() => onSave(exp.id)}
-            className={"w-[52px] h-[52px] rounded-md shrink-0 grid place-items-center border " + (saved ? "bg-[rgba(210,115,79,0.16)] border-accent" : "bg-white/[0.06] border-cardstroke")}>
-            <Icon name="heart" size={22} fill={saved ? "var(--accent-soft)" : "none"} color={saved ? "var(--accent-soft)" : "var(--ink)"} />
-          </button>
-          <button onClick={() => setShare(true)} className="w-[52px] h-[52px] rounded-md shrink-0 grid place-items-center bg-white/[0.06] border border-cardstroke">
-            <Icon name="share" size={22} color="var(--ink)" />
-          </button>
-          <button onClick={() => setNav(true)}
-            className="flex-1 h-[52px] rounded-md flex items-center justify-center gap-2 text-[15px] font-semibold text-accent-on bg-accent shadow-[0_8px_24px_rgba(210,115,79,0.3)]">
+          <button
+            onClick={() => setNav(true)}
+            className="w-full h-[52px] rounded-md flex items-center justify-center gap-2 text-[15px] font-semibold text-accent-on bg-accent shadow-[0_8px_24px_rgba(210,115,79,0.3)]"
+          >
             <Icon name="route" size={19} color="var(--on-accent)" stroke={2} /> Cómo llegar
           </button>
         </div>

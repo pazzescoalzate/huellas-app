@@ -28,10 +28,10 @@ function PantallaGuardadosInvitado({ onCrearCuenta }) {
         className="w-[72px] h-[72px] rounded-2xl mb-6 grid place-items-center"
         style={{ background: "rgba(210,115,79,0.10)", border: "1px solid rgba(210,115,79,0.25)" }}
       >
-        <Icon name="heart" size={32} color="var(--accent-soft)" />
+        <Icon name="bookmark" size={32} color="var(--accent-soft)" />
       </div>
       <h2 className="text-[21px] font-semibold text-ink-strong tracking-[-0.01em] mb-2 [text-wrap:balance]">
-        Guarda tus lugares favoritos
+        Tus lugares por visitar
       </h2>
       <p className="text-[14px] font-light text-ink-soft leading-[1.6] mb-8 [text-wrap:balance]">
         Crea una cuenta gratis para guardar experiencias y volver a ellas cuando quieras.
@@ -81,11 +81,11 @@ export default function SavedScreen({ onOpen, onCrearCuenta }) {
         // Estado vacío para usuarios registrados sin guardados aún
         <div className="flex flex-col items-center justify-center text-center px-11 pt-20">
           <div className="w-[72px] h-[72px] rounded-lg grid place-items-center mb-5 bg-[rgba(210,115,79,0.1)] border border-[rgba(210,115,79,0.24)]">
-            <Icon name="heart" size={32} color="var(--accent-soft)" />
+            <Icon name="bookmark" size={32} color="var(--accent-soft)" />
           </div>
-          <h2 className="text-[19px] font-medium text-ink-strong mb-2">Aún no guardas nada</h2>
+          <h2 className="text-[19px] font-medium text-ink-strong mb-2">Aún no tienes nada por visitar</h2>
           <p className="text-[14px] font-light text-ink-soft leading-[1.5] max-w-[260px]">
-            Toca el corazón en cualquier experiencia y aparecerá aquí, lista para cuando llegue el momento.
+            Toca la bandera en cualquier experiencia y aparecerá aquí, lista para cuando llegue el momento.
           </p>
         </div>
       ) : (
@@ -122,12 +122,12 @@ function SavedRow({ lugar, onOpen, onToggle }) {
           <div className="text-[16px] font-semibold text-ink-strong tracking-[-0.01em] leading-[1.2] whitespace-nowrap overflow-hidden text-ellipsis">
             {lugar.title}
           </div>
-          {/* Corazón rojo: tocarlo quita el lugar de guardados */}
+          {/* Bandera coral: tocarlo quita el lugar de "Por visitar" */}
           <button
             onClick={(e) => { e.stopPropagation(); onToggle(lugar); }}
             className="shrink-0 -mt-0.5"
           >
-            <Icon name="heart" size={20} fill="var(--accent)" color="var(--accent)" />
+            <Icon name="bookmark" size={20} fill="var(--accent)" color="var(--accent)" stroke={0} />
           </button>
         </div>
 

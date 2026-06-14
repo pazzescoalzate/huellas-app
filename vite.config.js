@@ -4,6 +4,12 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // https://vite.dev/config/
 export default defineConfig({
+  resolve: {
+    // Garantiza que siempre se use UNA sola copia de React en todo el bundle.
+    // Previene el error "Invalid hook call" cuando librerías externas
+    // tienen React como dependencia y Vite podría resolver otra copia.
+    dedupe: ["react", "react-dom"],
+  },
   plugins: [
     react(),
     VitePWA({

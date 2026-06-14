@@ -153,7 +153,7 @@ export function NavSheet({ exp, onClose }) {
         logo={<Icon name="pin" size={22} color="var(--accent-soft)" />}
         accent="rgba(210,115,79,0.14)"
         label="Copiar dirección" sub={`${exp.title}, ${exp.place}`}
-        trailing={<Icon name="bookmark" size={18} color="var(--ink-faint)" />}
+        trailing={<Icon name="download" size={18} color="var(--ink-faint)" />}
         onClick={() => copy(`${exp.title}, ${exp.place}`, "Dirección copiada")} />
     </ActionSheet>
   );
@@ -180,7 +180,7 @@ export function ShareSheet({ exp, onClose }) {
       <ActionItem logo={<WhatsAppGlyph />} label="WhatsApp" sub="Enviar a un chat"
         onClick={() => go(`https://wa.me/?text=${encodeURIComponent(text + " " + url)}`)} />
       <ActionItem
-        logo={<Icon name="bookmark" size={22} color="var(--accent-soft)" />} accent="rgba(210,115,79,0.14)"
+        logo={<Icon name="download" size={22} color="var(--accent-soft)" />} accent="rgba(210,115,79,0.14)"
         label="Copiar enlace" sub={url.replace("https://", "")}
         trailing={<span className="text-[12px] font-medium text-accent-soft">Copiar</span>}
         onClick={() => copy(url, "Enlace copiado")} />

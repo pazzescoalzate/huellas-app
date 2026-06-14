@@ -9,10 +9,12 @@ import ProfileScreen from "./components/Profile.jsx";
 import DetailSheet from "./components/Detail.jsx";
 import LocationSheet from "./components/Location.jsx";
 import AuthScreen from "./components/auth/AuthScreen.jsx";
+import CelebracionSello from "./components/CelebracionSello.jsx";
 import Icon from "./components/Icon.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 import { usePerfil } from "./context/PerfilContext.jsx";
 import { useGuardados } from "./context/GuardadosContext.jsx";
+import { useVisitados } from "./context/VisitadosContext.jsx";
 import wordmarkWhite from "./assets/huella-wordmark-white.svg";
 
 function readState() {
@@ -32,9 +34,15 @@ function SplashCarga() {
   );
 }
 
-/* Modal que aparece cuando un invitado intenta guardar un lugar.
-   Invita a crear una cuenta sin bloquear la navegación. */
-function AvisoInvitado({ onCerrar, onCrearCuenta }) {
+/* Modal reutilizable de "necesitas cuenta" para guardados, visitados y otras acciones.
+   Cada instancia puede personalizar el icono, el título y la descripción. */
+function AvisoInvitado({
+  onCerrar,
+  onCrearCuenta,
+  icono      = "bookmark",
+  titulo     = "Guarda este lugar",
+  descripcion = "Crea una cuenta gratis para guardar experiencias.",
+}) {
   return (
     <div className="absolute inset-0 z-[80] flex flex-col">
       {/* Fondo oscuro: clic fuera cierra el modal */}
@@ -52,13 +60,11 @@ function AvisoInvitado({ onCerrar, onCrearCuenta }) {
             className="w-[52px] h-[52px] rounded-xl grid place-items-center shrink-0"
             style={{ background: "rgba(210,115,79,0.12)", border: "1px solid rgba(210,115,79,0.25)" }}
           >
-            <Icon name="heart" size={24} color="var(--accent-soft)" />
+            <Icon name={icono} size={24} color="var(--accent-soft)" />
           </div>
           <div>
-            <div className="text-[17px] font-semibold text-ink-strong">Guarda este lugar</div>
-            <div className="text-[13.5px] font-light text-ink-soft mt-0.5">
-              Crea una cuenta gratis para guardar experiencias.
-            </div>
+            <div className="text-[17px] font-semibold text-ink-strong">{titulo}</div>
+            <div className="text-[13.5px] font-light text-ink-soft mt-0.5">{descripcion}</div>
           </div>
         </div>
 
@@ -103,6 +109,13 @@ export default function App() {
 
   // ── Favoritos del usuario (tabla guardados) ───────────────────────────
   const { estaGuardado, toggleGuardado, avisoInvitado, cerrarAviso } = useGuardados();
+
+  // ── Visitados del usuario (tabla visitados) ───────────────────────────
+  const {
+    estaVisitado, toggleVisitado,
+    avisoVisitadoInvitado, cerrarAvisoVisitado,
+    sellosNuevos, cerrarCelebracion,   // cola de sellos para celebración
+  } = useVisitados();
 
   // ── Modo invitado: eligió entrar sin cuenta ────────────────────────────
   const [modoInvitado, setModoInvitado] = useState(
@@ -264,6 +277,8 @@ export default function App() {
             /* Envolvemos toggleGuardado con el lugar completo para que
                Detail.jsx pueda llamar onSave() sin conocer el objeto */
             onSave={() => toggleGuardado(open)}
+            visited={estaVisitado(open.id)}
+            onVisit={() => toggleVisitado(open)}
             onClose={() => setOpen(null)}
           />
         )}
@@ -276,7 +291,7 @@ export default function App() {
           />
         )}
 
-        {/* Modal de invitado: aparece cuando un usuario sin cuenta toca el corazón */}
+        {/* Modal de invitado: aparece cuando toca el corazón (guardar) */}
         {avisoInvitado && (
           <AvisoInvitado
             onCerrar={cerrarAviso}
@@ -285,6 +300,31 @@ export default function App() {
               setModoInvitado(false);
               localStorage.removeItem("huella_invitado");
             }}
+          />
+        )}
+
+        {/* Modal de invitado: aparece cuando toca "Ya estuve aquí" (visitar) */}
+        {avisoVisitadoInvitado && (
+          <AvisoInvitado
+            icono="footprints"
+            titulo="Registra tus visitas"
+            descripcion="Crea una cuenta para llevar tu historial de lugares vividos."
+            onCerrar={cerrarAvisoVisitado}
+            onCrearCuenta={() => {
+              cerrarAvisoVisitado();
+              setModoInvitado(false);
+              localStorage.removeItem("huella_invitado");
+            }}
+          />
+        )}
+
+        {/* Celebración de sello: se muestra cuando el usuario desbloquea uno nuevo.
+            Siempre muestra sellosNuevos[0]; al cerrar, el contexto hace slice(1)
+            y el siguiente sello (si hay) aparece automáticamente. */}
+        {sellosNuevos.length > 0 && (
+          <CelebracionSello
+            sello={sellosNuevos[0]}
+            onCerrar={cerrarCelebracion}
           />
         )}
       </div>

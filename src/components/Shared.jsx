@@ -85,7 +85,7 @@ export function BottomNav({ active, onNav }) {
   const tabs = [
     { k: "home", icon: "compass", label: "Explorar" },
     { k: "tours", icon: "route", label: "Tours" },
-    { k: "saved", icon: "heart", label: "Guardados" },
+    { k: "saved", icon: "bookmark", label: "Por visitar" },
     { k: "profile", icon: "user", label: "Perfil" },
   ];
   return (
@@ -97,9 +97,15 @@ export function BottomNav({ active, onNav }) {
             <button key={t.k} onClick={() => onNav(t.k)}
               className="flex-1 flex flex-col items-center gap-[3px] py-2 rounded-full"
               style={{ backgroundColor: on ? "rgba(210,115,79,0.16)" : "transparent" }}>
-              <Icon name={t.icon} size={21} stroke={on ? 2 : 1.6}
+              <Icon
+                name={t.icon}
+                size={21}
+                // El tab "Por visitar" (flag) se rellena cuando está activo; stroke=0 para
+                // que no quede doble borde sobre el relleno. Los demás tabs solo cambian el trazo.
+                stroke={on && t.k === "saved" ? 0 : (on ? 2 : 1.6)}
                 fill={on && t.k === "saved" ? "var(--accent-soft)" : "none"}
-                color={on ? "var(--accent-soft)" : "var(--ink-faint)"} />
+                color={on ? "var(--accent-soft)" : "var(--ink-faint)"}
+              />
               <span className={(on ? "font-semibold text-accent-soft" : "font-medium text-ink-faint") + " text-[10px]"}>{t.label}</span>
             </button>
           );

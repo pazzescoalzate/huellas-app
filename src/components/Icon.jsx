@@ -1,17 +1,17 @@
 /* HUELLA — Icon. Misma API que el original (name/size/stroke/color/fill/style),
    ahora respaldado por lucide-react. */
 import {
-  ArrowRight, ChevronLeft, ChevronRight, ChevronDown, MapPin, Heart, Bookmark, Search,
+  ArrowRight, ChevronLeft, ChevronRight, ChevronDown, MapPin, Heart, Bookmark, Flag, Search,
   SlidersHorizontal, House, Map, User, Sparkles, Clock, Route, Mountain,
   Check, X, Share, Download, Sun, Star, Leaf, Shield, Compass, Thermometer,
   Eye, EyeOff, Wifi, Landmark, Utensils, Zap, Coffee, Camera, Activity, Moon, Tent,
   Bike, Waves, Users, Gem, Crown, Flame, Snowflake, Trees, Footprints,
-  Award, Medal, Lock,
+  Award, Medal, Lock, Maximize2,
 } from "lucide-react";
 
 const ICONS = {
-  arrowRight: ArrowRight, chevLeft: ChevronLeft, chevRight: ChevronRight, chevDown: ChevronDown,
-  pin: MapPin, heart: Heart, bookmark: Bookmark, search: Search,
+  arrowRight: ArrowRight, chevLeft: ChevronLeft, chevRight: ChevronRight, chevDown: ChevronDown, expand: Maximize2,
+  pin: MapPin, heart: Heart, bookmark: Bookmark, flag: Flag, search: Search,
   sliders: SlidersHorizontal, home: House, map: Map, user: User,
   sparkles: Sparkles, clock: Clock, route: Route, mountain: Mountain,
   check: Check, x: X, share: Share, download: Download, sun: Sun,
