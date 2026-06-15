@@ -12,6 +12,12 @@ import Patch from "./Patch.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { usePerfil } from "../context/PerfilContext.jsx";
 import { useVisitados } from "../context/VisitadosContext.jsx";
+import { useGuardados } from "../context/GuardadosContext.jsx";
+
+/* Familias de categorías para las estadísticas del perfil.
+   Edita estas listas para mover una categoría de grupo sin tocar el resto. */
+const FAMILIA_NATURALEZA = new Set(["naturaleza", "miradores", "aventura"]);
+const FAMILIA_URBANO     = new Set(["cultura", "gastronomia", "cafes", "bienestar"]);
 
 /* Íconos para cada opción de compañía y ritmo */
 const ICON_COMPANIA = {
@@ -218,6 +224,7 @@ export default function ProfileScreen({ prefs, onSavePrefs, onCrearCuenta }) {
   const { usuario, esInvitado, salir } = useAuth();
   const { perfil } = usePerfil();
   const { visitadosList } = useVisitados();
+  const { guardadosList } = useGuardados();
 
   const [menu,             setMenu]             = useState(false);
   const [allBadges,        setAllBadges]        = useState(false);
@@ -254,8 +261,10 @@ export default function ProfileScreen({ prefs, onSavePrefs, onCrearCuenta }) {
   const opcionActividad = ONB.actividad.find((o) => o.k === ritmo)         || null;
   const tieneAlgoDato   = intereses.length > 0 || !!formaExplorar || !!ritmo;
 
-  // Estadísticas: todo en 0 hasta que conectemos guardados/visitados a Supabase
-  const stats = { lugares: 0, ciudades: 0, tours: 0, reviews: 0 };
+  // Estadísticas reales calculadas desde los contextos de visitados y guardados
+  const statNaturaleza = visitadosList.filter((v) => FAMILIA_NATURALEZA.has(v.lugar_categoria)).length;
+  const statUrbano     = visitadosList.filter((v) => FAMILIA_URBANO.has(v.lugar_categoria)).length;
+  const statGuardados  = guardadosList.length;
 
   // Sellos: catálogo real con `got` calculado desde los ids de Supabase
   const obtenidosSet   = new Set(sellosObtenidos);
@@ -322,15 +331,13 @@ export default function ProfileScreen({ prefs, onSavePrefs, onCrearCuenta }) {
         <div className="text-[13px] font-light text-ink-faint mt-0.5">{handle} · Explorando desde {anio}</div>
       </div>
 
-      {/* Estadísticas */}
+      {/* Estadísticas reales */}
       <div className="mx-[22px] px-3.5 py-4 rounded-lg flex bg-white/[0.045] border border-cardstroke">
-        <StatCell value={stats.lugares}  label="Lugares"  />
+        <StatCell value={statNaturaleza} label="Naturaleza" />
         <div className="w-px bg-cardstroke"></div>
-        <StatCell value={stats.ciudades} label="Ciudades" />
+        <StatCell value={statUrbano}     label="Urbano"     />
         <div className="w-px bg-cardstroke"></div>
-        <StatCell value={stats.tours}    label="Tours"    />
-        <div className="w-px bg-cardstroke"></div>
-        <StatCell value={stats.reviews}  label="Reseñas"  />
+        <StatCell value={statGuardados}  label="Guardados"  />
       </div>
 
       {/* ── b) CARD DE YA ESTUVE ──────────────────────────────────────── */}
