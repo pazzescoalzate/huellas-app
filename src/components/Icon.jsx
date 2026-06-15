@@ -6,7 +6,7 @@ import {
   Check, X, Share, Download, Sun, Star, Leaf, Shield, Compass, Thermometer,
   Eye, EyeOff, Wifi, Landmark, Utensils, Zap, Coffee, Camera, Activity, Moon, Tent,
   Bike, Waves, Users, Gem, Crown, Flame, Snowflake, Trees, Footprints,
-  Award, Medal, Lock, Maximize2,
+  Award, Medal, Lock, Maximize2, LogOut, UserPen, Menu, Settings,
 } from "lucide-react";
 
 const ICONS = {
@@ -21,7 +21,7 @@ const ICONS = {
   activity: Activity, moon: Moon, tent: Tent, bike: Bike,
   waves: Waves, users: Users, gem: Gem, crown: Crown, flame: Flame,
   snowflake: Snowflake, trees: Trees, footprints: Footprints,
-  award: Award, medal: Medal, lock: Lock,
+  award: Award, medal: Medal, lock: Lock, logOut: LogOut, userEdit: UserPen, menu: Menu, settings: Settings,
 };
 
 export default function Icon({

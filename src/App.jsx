@@ -11,6 +11,7 @@ import LocationSheet from "./components/Location.jsx";
 import AuthScreen from "./components/auth/AuthScreen.jsx";
 import CelebracionSello from "./components/CelebracionSello.jsx";
 import Icon from "./components/Icon.jsx";
+import { actualizarPerfil } from "./services/perfil.js";
 import { useAuth } from "./context/AuthContext.jsx";
 import { usePerfil } from "./context/PerfilContext.jsx";
 import { useGuardados } from "./context/GuardadosContext.jsx";
@@ -105,7 +106,7 @@ export default function App() {
   const { usuario, cargando, esInvitado } = useAuth();
 
   // ── Perfil del usuario (tabla perfiles) ───────────────────────────────
-  const { perfil, cargandoPerfil, guardarOnboarding, agregarCiudadReciente } = usePerfil();
+  const { perfil, cargandoPerfil, guardarOnboarding, agregarCiudadReciente, setPerfil } = usePerfil();
 
   // ── Favoritos del usuario (tabla guardados) ───────────────────────────
   const { estaGuardado, toggleGuardado, avisoInvitado, cerrarAviso } = useGuardados();
@@ -175,6 +176,38 @@ export default function App() {
   const recientes = esInvitado
     ? recientesGuest
     : (perfil?.ciudades_recientes || []);
+
+  /* Guarda las preferencias del usuario:
+     1. Actualiza "prefs" en memoria → se persiste en localStorage vía el useEffect.
+     2. Si hay sesión, guarda también en Supabase (mapeando compania→forma_explorar,
+        actividad→ritmo) y refresca el PerfilContext para que el Perfil refleje
+        los cambios de inmediato sin recargar la página.
+     3. Si es invitado (sin usuario), solo se actualiza el paso 1. */
+  async function guardarPrefs(p) {
+    setPrefs(p); // actualiza prefs en memoria + localStorage
+
+    if (!usuario) return; // invitado: solo localStorage, sin Supabase
+
+    // Actualización optimista: el Perfil ve los nuevos intereses al instante
+    setPerfil((prev) => ({
+      ...prev,
+      intereses:      p.intereses,
+      forma_explorar: p.compania,   // compania → forma_explorar
+      ritmo:          p.actividad,  // actividad → ritmo
+    }));
+
+    try {
+      const datos = await actualizarPerfil(usuario.id, {
+        intereses:      p.intereses,
+        forma_explorar: p.compania,
+        ritmo:          p.actividad,
+      });
+      setPerfil(datos); // sincroniza con los datos confirmados por Supabase
+    } catch (err) {
+      console.error("[huella] Error guardando preferencias en Supabase:", err.message);
+      // La actualización optimista sigue activa; si el usuario recarga verá los datos viejos.
+    }
+  }
 
   // ── CASO 1: Supabase comprobando si hay sesión guardada ────────────────
   if (cargando) {
@@ -262,7 +295,7 @@ export default function App() {
                 actividad: "Moderado",
               }
             }
-            onSavePrefs={setPrefs}
+            onSavePrefs={guardarPrefs}
             onCrearCuenta={() => {
               setModoInvitado(false);
               localStorage.removeItem("huella_invitado");

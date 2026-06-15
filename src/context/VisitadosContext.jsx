@@ -146,6 +146,7 @@ export function VisitadosProvider({ children }) {
         cerrarAvisoVisitado,
         sellosNuevos,       // cola de sellos para la celebración
         cerrarCelebracion,  // cierra el primero de la cola
+        visitadosList,      // lista completa de filas para el perfil y los sellos
       }}
     >
       {children}

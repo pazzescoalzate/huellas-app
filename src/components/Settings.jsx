@@ -2,12 +2,10 @@
 import { useState } from "react";
 import Icon from "./Icon.jsx";
 import { Chip } from "./Shared.jsx";
-import PhotoSlot from "./PhotoSlot.jsx";
 import { PrimaryBtn, OptionRow } from "./Onboarding.jsx";
 import { ONB } from "../data/huella.js";
 
-// nombre e iniciales vienen del perfil real (Profile.jsx los pasa aquí)
-export default function SettingsSheet({ prefs, onSave, onClose, nombre, iniciales }) {
+export default function SettingsSheet({ prefs, onSave, onClose }) {
   const [closing, setClosing] = useState(false);
   const [intereses, setIntereses] = useState(prefs.intereses || []);
   const [compania, setCompania] = useState(prefs.compania || "Solo");
@@ -41,7 +39,7 @@ export default function SettingsSheet({ prefs, onSave, onClose, nombre, iniciale
         <div className="pt-2.5 px-[22px] pb-1.5 shrink-0">
           <div className="w-10 h-1 rounded-full bg-ink-ghost mx-auto mb-4"></div>
           <div className="flex items-center justify-between">
-            <h2 className="text-[21px] font-semibold text-ink-strong tracking-[-0.01em]">Ajustes del perfil</h2>
+            <h2 className="text-[21px] font-semibold text-ink-strong tracking-[-0.01em]">Tus intereses</h2>
             <button onClick={close} className="w-[34px] h-[34px] rounded-full grid place-items-center bg-white/[0.06] border border-cardstroke">
               <Icon name="x" size={17} color="var(--ink)" />
             </button>
@@ -49,26 +47,6 @@ export default function SettingsSheet({ prefs, onSave, onClose, nombre, iniciale
         </div>
 
         <div className="flex-1 overflow-y-auto pt-3.5 px-[22px] pb-2 min-h-0 [overscroll-behavior:contain]">
-          {/* foto */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative w-[84px] h-[84px] shrink-0">
-              {/* Iniciales reales del usuario (prop que viene de Profile.jsx) */}
-              <div className="absolute inset-0 rounded-full grid place-items-center text-white text-[30px] font-semibold border-2 border-white/[0.16]"
-                style={{ background: "linear-gradient(135deg, #C05A34, #7A3E55)" }}>{iniciales || "?"}</div>
-              <PhotoSlot id="avatar-photo" shape="circle"
-                style={{ position: "absolute", inset: 0, width: 84, height: 84, zIndex: 2 }} />
-              <span className="absolute -right-0.5 -bottom-0.5 w-7 h-7 rounded-full grid place-items-center bg-accent z-[3] pointer-events-none" style={{ border: "2px solid var(--bg-2)" }}>
-                <Icon name="camera" size={14} color="var(--on-accent)" stroke={2} />
-              </span>
-            </div>
-            <div>
-              <div className="text-[15px] font-medium text-ink-strong">Foto de perfil</div>
-              <div className="text-[12.5px] font-light text-ink-soft mt-[3px] leading-[1.45]">
-                Toca el círculo para elegir una imagen de tu galería.
-              </div>
-            </div>
-          </div>
-
           {/* intereses */}
           <div className={lbl + " mb-3"}>Tus intereses</div>
           <div className="flex flex-wrap gap-2 mb-[26px]">
