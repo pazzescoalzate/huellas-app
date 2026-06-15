@@ -129,7 +129,7 @@ export async function revisarSellosNuevos(userId, listaVisitados) {
 
     for (const sello of SELLOS) {
       // Saltar si ya lo tiene
-      if (yaObtenidosSet.has(sello.tipo)) continue;
+      if (yaObtenidosSet.has(sello.id)) continue;
 
       // Evaluar si la condición se cumple ahora
       if (!evaluarCondicion(sello.condicion, stats)) continue;
@@ -139,7 +139,7 @@ export async function revisarSellosNuevos(userId, listaVisitados) {
         .from("sellos")
         .insert({
           user_id:    userId,
-          sello_tipo: sello.tipo,
+          sello_tipo: sello.id,
           obtenido_en: new Date().toISOString(),
         });
 
@@ -147,7 +147,7 @@ export async function revisarSellosNuevos(userId, listaVisitados) {
         // Error al guardar este sello específico: lo registramos pero seguimos
         // revisando el resto del catálogo
         console.error(
-          `[huella] Error guardando sello "${sello.tipo}":`,
+          `[huella] Error guardando sello "${sello.id}":`,
           error.message
         );
         continue;

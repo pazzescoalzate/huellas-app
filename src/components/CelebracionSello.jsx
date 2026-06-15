@@ -9,6 +9,7 @@
    el contexto hace slice(1), mostrando el siguiente automáticamente. */
 
 import Icon from "./Icon.jsx";
+import Patch from "./Patch.jsx";
 
 export default function CelebracionSello({ sello, onCerrar }) {
   if (!sello) return null;
@@ -51,15 +52,9 @@ export default function CelebracionSello({ sello, onCerrar }) {
             <Icon name="sparkles" size={14} color="var(--accent-soft)" />
           </div>
 
-          {/* Ícono del sello en círculo coral */}
-          <div
-            className="w-[80px] h-[80px] rounded-full grid place-items-center mb-5 shadow-[0_8px_28px_rgba(210,115,79,0.35)]"
-            style={{
-              background: "linear-gradient(145deg, rgba(210,115,79,0.28), rgba(210,115,79,0.12))",
-              border: "1.5px solid rgba(210,115,79,0.4)",
-            }}
-          >
-            <Icon name={sello.icono} size={36} color="var(--accent-soft)" stroke={1.6} />
+          {/* Insignia real del sello: misma forma y color que en el Perfil */}
+          <div className="mb-3">
+            <Patch b={{ ...sello, got: true, date: "" }} w={170} />
           </div>
 
           {/* Nombre del sello */}

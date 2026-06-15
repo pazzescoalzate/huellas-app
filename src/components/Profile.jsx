@@ -1,11 +1,14 @@
 /* HUELLA — Perfil: datos reales de Supabase + mapa de huellas + sellos */
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Icon from "./Icon.jsx";
 import { CatSurface } from "./Shared.jsx";
 import { CAT_ICON } from "./Cards.jsx";
 import PhotoSlot from "./PhotoSlot.jsx";
 import SettingsSheet from "./Settings.jsx";
-import { CAT, PROFILE } from "../data/huella.js";
+import { CAT } from "../data/huella.js";
+import { SELLOS } from "../data/sellos.js";
+import { obtenerSellosObtenidos } from "../services/sellos.js";
+import Patch from "./Patch.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { usePerfil } from "../context/PerfilContext.jsx";
 
@@ -161,45 +164,6 @@ function InteractiveMap({ visited }) {
   );
 }
 
-/* ---------- sellos: parches ilustrados ---------- */
-const PATCH_TONES  = { terracota: "#D2734F", azul: "#6E92C4", salvia: "#8AA590", arena: "#D9C2A3" };
-const PATCH_SHAPES = {
-  hex:    "M75 7 L129 35 L129 81 L75 109 L21 81 L21 35 Z",
-  plaque: "M9 58 L36 15 L114 15 L141 58 L114 101 L36 101 Z",
-  seal:   "M75 8 A50 50 0 1 1 74.9 8 Z",
-  shield: "M75 9 L127 27 L127 62 C127 86 104 102 75 109 C46 102 23 86 23 62 L23 27 Z",
-};
-
-function Patch({ b, w = 150 }) {
-  const locked = !b.got;
-  const tone = locked ? "#7A8088" : (PATCH_TONES[b.tone] || PATCH_TONES.terracota);
-  const h = Math.round(w * 0.773);
-  return (
-    <div className="shrink-0 flex flex-col items-center" style={{ width: w + 8, opacity: locked ? 0.62 : 1 }}>
-      <div className="relative" style={{ width: w, height: h }}>
-        <svg viewBox="0 0 150 116" className="absolute inset-0 w-full h-full">
-          <path d={PATCH_SHAPES[b.shape] || PATCH_SHAPES.hex} fill={tone} fillOpacity="0.06"
-            stroke={tone} strokeWidth="3.5" strokeLinejoin="round" strokeDasharray={locked ? "7 5" : "none"}></path>
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-[5px] pt-0.5">
-          <div className="text-center" style={{ fontWeight: 600, fontSize: Math.max(12, Math.round(w * 0.092)), color: tone, letterSpacing: "-0.01em", maxWidth: "64%", lineHeight: 1.12 }}>{b.label}</div>
-          <Icon name={locked ? "lock" : b.icon} size={Math.round(w * 0.19)} color={tone} stroke={1.7} />
-        </div>
-        {!locked && (<>
-          <span className="absolute top-1/2 -translate-y-1/2 text-[9.5px] font-semibold opacity-85" style={{ left: b.shape === "plaque" ? 22 : 30, color: tone }}>HU</span>
-          <span className="absolute top-1/2 -translate-y-1/2 opacity-85 grid" style={{ right: b.shape === "plaque" ? 22 : 30 }}>
-            <Icon name="pin" size={11} color={tone} stroke={2} />
-          </span>
-        </>)}
-      </div>
-      <div className="text-center mt-[9px]">
-        <div className="text-[12.5px] font-medium text-ink">{b.desc}</div>
-        <div className="text-[11px] font-light text-ink-faint mt-px">{locked ? "Por conseguir" : b.date}</div>
-      </div>
-    </div>
-  );
-}
-
 /* ---------- pantalla para usuarios invitados ---------- */
 function PantallaInvitado({ onCrearCuenta }) {
   return (
@@ -232,6 +196,17 @@ export default function ProfileScreen({ prefs, onSavePrefs, onCrearCuenta }) {
   const [allBadges, setAllBadges] = useState(false);
   const [scrolled,  setScrolled]  = useState(false);
 
+  // ids de sellos obtenidos leídos desde Supabase (["pionero", "descubridor", ...])
+  const [sellosObtenidos, setSellosObtenidos] = useState([]);
+
+  // ── Carga de sellos reales desde Supabase ─────────────────────────────
+  useEffect(() => {
+    if (!usuario) return; // invitado: no consultamos Supabase
+    obtenerSellosObtenidos(usuario.id)
+      .then((ids) => setSellosObtenidos(ids))
+      .catch((err) => console.error("[huella] Error cargando sellos del perfil:", err.message));
+  }, [usuario]);
+
   // ── Datos del perfil real ──────────────────────────────────────────────
   const nombre    = perfil?.nombre || usuario?.email?.split("@")[0] || "Explorador";
   const iniciales = generarIniciales(nombre);
@@ -249,11 +224,20 @@ export default function ProfileScreen({ prefs, onSavePrefs, onCrearCuenta }) {
   // Visitados: vacío por ahora (se conectará a la tabla "visitados" en el futuro)
   const visitedExps = [];
 
-  // Sellos: usamos el catálogo de PROFILE.badges pero todos bloqueados (got: false)
-  // porque ningún usuario nuevo ha desbloqueado sellos aún
-  const badgesCatalogo = PROFILE.badges.map((b) => ({ ...b, got: false }));
-  const earned = []; // nadie tiene sellos aún
-  const locked = badgesCatalogo;
+  // Sellos: catálogo real con `got` calculado desde los ids de Supabase
+  const obtenidosSet   = new Set(sellosObtenidos);
+  const badgesCatalogo = SELLOS.map((s) => ({
+    id:    s.id,
+    label: s.label,
+    desc:  s.desc,
+    icono: s.icono,
+    shape: s.shape,
+    tone:  s.tone,
+    got:   obtenidosSet.has(s.id),
+    date:  "", // fecha de obtención: se puede agregar en el futuro
+  }));
+  const earned = badgesCatalogo.filter((b) => b.got);
+  const locked = badgesCatalogo.filter((b) => !b.got);
 
   // ── Si es invitado, mostramos pantalla de conversión ──────────────────
   if (esInvitado) {
@@ -354,12 +338,20 @@ export default function ProfileScreen({ prefs, onSavePrefs, onCrearCuenta }) {
           </button>
         </div>
         <div className="flex gap-3 overflow-x-auto px-[22px] pb-1 snap-x snap-mandatory">
-          {/* Sin sellos ganados aún — solo mostramos el botón de "por conseguir" */}
-          <button onClick={() => setAllBadges(true)}
-            className="w-[150px] shrink-0 self-stretch flex flex-col items-center justify-center gap-2 rounded-lg border-[1.5px] border-dashed border-ink-ghost my-1 mb-[30px] py-6">
-            <span className="text-[19px] font-semibold text-ink-soft">+{locked.length}</span>
-            <span className="text-[12px] text-ink-faint">por conseguir</span>
-          </button>
+          {/* Sellos obtenidos: uno por uno en el carrusel */}
+          {earned.map((b) => (
+            <div key={b.id} className="shrink-0 snap-start">
+              <Patch b={b} w={130} />
+            </div>
+          ))}
+          {/* Botón "por conseguir" — siempre al final del carrusel */}
+          {locked.length > 0 && (
+            <button onClick={() => setAllBadges(true)}
+              className="w-[130px] shrink-0 self-stretch flex flex-col items-center justify-center gap-2 rounded-lg border-[1.5px] border-dashed border-ink-ghost my-1 mb-[30px] py-6 snap-start">
+              <span className="text-[19px] font-semibold text-ink-soft">+{locked.length}</span>
+              <span className="text-[12px] text-ink-faint">por conseguir</span>
+            </button>
+          )}
         </div>
       </div>
 
