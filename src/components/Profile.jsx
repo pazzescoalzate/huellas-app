@@ -591,10 +591,12 @@ function PaginaEditarPerfil({ onClose }) {
   const { perfil, setPerfil } = usePerfil();
   const { usuario } = useAuth();
   const [closing,   setClosing]   = useState(false);
-  const [nombre,    setNombre]    = useState(perfil?.nombre   || "");
-  const [username,  setUsername]  = useState(perfil?.username || "");
-  const [guardando, setGuardando] = useState(false);
-  const [error,     setError]     = useState(null);
+  const [nombre,         setNombre]         = useState(perfil?.nombre         || "");
+  const [username,       setUsername]       = useState(perfil?.username       || "");
+  const [destinoSonado,  setDestinoSonado]  = useState(perfil?.destino_sonado || "");
+  const [tiempoLibre,    setTiempoLibre]    = useState(perfil?.tiempo_libre   || "");
+  const [guardando,      setGuardando]      = useState(false);
+  const [error,          setError]          = useState(null);
 
   const close = () => { setClosing(true); setTimeout(onClose, 300); };
 
@@ -604,8 +606,10 @@ function PaginaEditarPerfil({ onClose }) {
     setError(null);
     try {
       const datos = await actualizarPerfil(usuario.id, {
-        nombre:   nombre.trim()   || null,
-        username: username.trim() || null,
+        nombre:          nombre.trim()        || null,
+        username:        username.trim()      || null,
+        destino_sonado:  destinoSonado.trim() || null,
+        tiempo_libre:    tiempoLibre.trim()   || null,
       });
       setPerfil(datos);
       close();
@@ -682,6 +686,42 @@ function PaginaEditarPerfil({ onClose }) {
             </div>
             <div className="text-[11.5px] font-light text-ink-faint mt-1.5">
               Solo letras minúsculas, números y guiones bajos.
+            </div>
+          </div>
+
+          {/* Destino soñado */}
+          <div className="mb-5">
+            <label className="text-[11px] font-semibold tracking-[0.12em] uppercase text-ink-faint block mb-2">
+              ¿A dónde siempre quisiste ir?
+            </label>
+            <textarea
+              value={destinoSonado}
+              onChange={(e) => setDestinoSonado(e.target.value)}
+              placeholder="Ese lugar que sueñas conocer…"
+              maxLength={150}
+              rows={2}
+              className="w-full bg-white/[0.04] border border-cardstroke rounded-xl px-4 py-3.5 text-[15px] text-ink-strong placeholder:text-ink-ghost outline-none focus:border-accent/60 resize-none"
+            />
+            <div className="text-[11px] font-light text-ink-ghost mt-1 text-right">
+              {destinoSonado.length}/150
+            </div>
+          </div>
+
+          {/* Tiempo libre */}
+          <div className="mb-6">
+            <label className="text-[11px] font-semibold tracking-[0.12em] uppercase text-ink-faint block mb-2">
+              ¿Qué haces en tu tiempo libre?
+            </label>
+            <textarea
+              value={tiempoLibre}
+              onChange={(e) => setTiempoLibre(e.target.value)}
+              placeholder="Lo que disfrutas hacer…"
+              maxLength={150}
+              rows={2}
+              className="w-full bg-white/[0.04] border border-cardstroke rounded-xl px-4 py-3.5 text-[15px] text-ink-strong placeholder:text-ink-ghost outline-none focus:border-accent/60 resize-none"
+            />
+            <div className="text-[11px] font-light text-ink-ghost mt-1 text-right">
+              {tiempoLibre.length}/150
             </div>
           </div>
 

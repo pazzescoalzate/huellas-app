@@ -4,16 +4,40 @@ import Icon from "./Icon.jsx";
 import { Chip } from "./Shared.jsx";
 import { PrimaryBtn, OptionRow } from "./Onboarding.jsx";
 import { ONB } from "../data/huella.js";
+import LocationSheet from "./Location.jsx";
+import { usePerfil } from "../context/PerfilContext.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
+import { actualizarPerfil } from "../services/perfil.js";
 
 export default function SettingsSheet({ prefs, onSave, onClose }) {
-  const [closing, setClosing] = useState(false);
-  const [intereses, setIntereses] = useState(prefs.intereses || []);
-  const [compania, setCompania] = useState(prefs.compania || "Solo");
-  const [actividad, setActividad] = useState(prefs.actividad || "Moderado");
+  const { perfil, setPerfil } = usePerfil();
+  const { usuario } = useAuth();
+
+  const [closing,        setClosing]        = useState(false);
+  const [intereses,      setIntereses]      = useState(prefs.intereses || []);
+  const [compania,       setCompania]       = useState(prefs.compania || "Solo");
+  const [actividad,      setActividad]      = useState(prefs.actividad || "Moderado");
+  const [ciudadResidencia, setCiudadResidencia] = useState(perfil?.ciudad_residencia || null);
+  const [showCityPicker, setShowCityPicker] = useState(false);
+
   const close = () => { setClosing(true); setTimeout(onClose, 280); };
-  const save = () => { onSave({ intereses, compania, actividad }); close(); };
+  const save  = () => { onSave({ intereses, compania, actividad }); close(); };
   const toggle = (v) => setIntereses((arr) => arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
   const lbl = "text-[11px] font-semibold tracking-[0.12em] uppercase text-ink-faint";
+
+  // Guarda la ciudad de residencia en Supabase y refresca el contexto al instante
+  const pickCiudad = async (ciudad) => {
+    setCiudadResidencia(ciudad);
+    setShowCityPicker(false);
+    if (!usuario) return;
+    setPerfil((prev) => ({ ...prev, ciudad_residencia: ciudad })); // optimista
+    try {
+      const datos = await actualizarPerfil(usuario.id, { ciudad_residencia: ciudad });
+      setPerfil(datos);
+    } catch (err) {
+      console.error("[huella] Error guardando ciudad de residencia:", err.message);
+    }
+  };
 
   return (
     <div className="absolute inset-0 z-[70] flex flex-col">
@@ -47,6 +71,34 @@ export default function SettingsSheet({ prefs, onSave, onClose }) {
         </div>
 
         <div className="flex-1 overflow-y-auto pt-3.5 px-[22px] pb-2 min-h-0 [overscroll-behavior:contain]">
+
+          {/* Ciudad de residencia */}
+          <div className={lbl + " mb-2.5"}>Ciudad de residencia</div>
+          {ciudadResidencia ? (
+            <button
+              onClick={() => setShowCityPicker(true)}
+              className="w-full text-left flex items-center gap-3.5 px-4 py-3.5 mb-[22px] rounded-xl bg-white/[0.04] border border-cardstroke active:opacity-75 transition-opacity"
+            >
+              <div className="w-8 h-8 rounded-full grid place-items-center shrink-0"
+                style={{ background: "rgba(210,115,79,0.10)", border: "1px solid rgba(210,115,79,0.18)" }}>
+                <Icon name="home" size={16} color="var(--accent-soft)" stroke={1.6} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[15px] font-medium text-ink-strong truncate">{ciudadResidencia.name}</div>
+                <div className="text-[12px] font-light text-ink-faint">{ciudadResidencia.region}</div>
+              </div>
+              <Icon name="chevRight" size={16} color="var(--ink-faint)" />
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowCityPicker(true)}
+              className="w-full text-left flex items-center gap-3 px-4 py-3.5 mb-[22px] rounded-xl bg-white/[0.04] border border-dashed border-cardstroke/60 active:opacity-75 transition-opacity"
+            >
+              <Icon name="search" size={16} color="var(--ink-faint)" stroke={1.6} />
+              <span className="text-[14px] font-medium text-ink-soft">Agregar ciudad de residencia</span>
+            </button>
+          )}
+
           {/* intereses */}
           <div className={lbl + " mb-3"}>Tus intereses</div>
           <div className="flex flex-wrap gap-2 mb-[26px]">
@@ -72,6 +124,17 @@ export default function SettingsSheet({ prefs, onSave, onClose }) {
           <PrimaryBtn label="Guardar cambios" onClick={save} icon="check" />
         </div>
       </div>
+
+      {/* Buscador de ciudad — zIndex alto para aparecer sobre este sheet (z-70) */}
+      {showCityPicker && (
+        <LocationSheet
+          current={ciudadResidencia}
+          recientes={[]}
+          onPick={pickCiudad}
+          onClose={() => setShowCityPicker(false)}
+          zIndex={80}
+        />
+      )}
     </div>
   );
 }

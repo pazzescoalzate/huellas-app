@@ -3,6 +3,7 @@ import { useState } from "react";
 import Icon from "./Icon.jsx";
 import { Chip } from "./Shared.jsx";
 import { ONB } from "../data/huella.js";
+import LocationSheet from "./Location.jsx";
 import huellaMark from "../assets/huella-mark.svg";
 import wordmarkWhite from "../assets/huella-wordmark-white.svg";
 
@@ -114,8 +115,10 @@ export default function Onboarding({ onComplete, initialStep = 0 }) {
   const [intereses, setIntereses] = useState(["Naturaleza", "Miradores", "Cafés"]);
   const [compania, setCompania] = useState("Con pareja");
   const [actividad, setActividad] = useState("Moderado");
+  const [ciudadResidencia, setCiudadResidencia] = useState(null);
+  const [showCityPicker, setShowCityPicker] = useState(false);
 
-  const total = 4;
+  const total = 5;
   // "back" no retrocede más allá del primer paso disponible
   // (evita que desde el paso 1 el usuario retroceda al step 0 de bienvenida)
   const back = () => setStep((s) => Math.max(initialStep, s - 1));
@@ -205,13 +208,87 @@ export default function Onboarding({ onComplete, initialStep = 0 }) {
     );
   }
 
+  // Paso 4 — ciudad de residencia (opcional, siempre se puede saltar)
+  if (step === 4) {
+    return (
+      <div className="fade flex-1 flex flex-col pt-2 px-[22px] min-h-0">
+        <div className="flex items-center gap-3.5 pt-1 pb-[18px]">
+          <button onClick={back} className="w-[38px] h-[38px] rounded-full shrink-0 grid place-items-center bg-white/5 border border-cardstroke">
+            <Icon name="chevLeft" size={20} color="var(--ink)" />
+          </button>
+          <div className="flex-1"><Progress step={3} total={total} /></div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="t-eyebrow mb-2.5">Tu ciudad</div>
+          <h2 className="text-[25px] font-medium text-ink-strong mb-2 tracking-[-0.01em] [text-wrap:balance]">
+            ¿Desde qué ciudad exploras habitualmente?
+          </h2>
+          <p className="text-[14px] font-light text-ink-soft mb-[22px]">
+            La usaremos para mostrarte lo más cercano. Puedes cambiarla en cualquier momento.
+          </p>
+
+          {ciudadResidencia ? (
+            /* Ciudad ya elegida: muestra nombre y permite cambiar */
+            <button
+              onClick={() => setShowCityPicker(true)}
+              className="w-full text-left flex items-center gap-3.5 p-4 rounded-xl border border-accent/40 active:opacity-75 transition-opacity"
+              style={{ background: "rgba(210,115,79,0.08)" }}
+            >
+              <div className="w-10 h-10 rounded-full grid place-items-center shrink-0"
+                style={{ background: "rgba(210,115,79,0.15)", border: "1px solid rgba(210,115,79,0.25)" }}>
+                <Icon name="home" size={19} color="var(--accent-soft)" stroke={1.6} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[15px] font-semibold text-ink-strong truncate">{ciudadResidencia.name}</div>
+                <div className="text-[12.5px] font-light text-ink-faint">{ciudadResidencia.region}</div>
+              </div>
+              <Icon name="chevRight" size={16} color="var(--ink-faint)" />
+            </button>
+          ) : (
+            /* Sin ciudad: botón para abrir el buscador */
+            <button
+              onClick={() => setShowCityPicker(true)}
+              className="w-full text-left flex items-center gap-3 p-4 rounded-xl border border-dashed border-cardstroke/60 bg-white/[0.02] active:opacity-75 transition-opacity"
+            >
+              <div className="w-10 h-10 rounded-full grid place-items-center shrink-0 bg-white/[0.06]">
+                <Icon name="search" size={18} color="var(--ink-faint)" stroke={1.6} />
+              </div>
+              <span className="text-[14px] font-medium text-ink-soft">Buscar mi ciudad</span>
+            </button>
+          )}
+        </div>
+
+        <div className="pt-3.5 pb-[22px]">
+          <PrimaryBtn label="Continuar" onClick={next} />
+          {/* Saltar: el paso es opcional, no es obligatorio elegir ciudad */}
+          <button onClick={next} className="w-full text-center mt-4 text-[14px] font-medium text-ink-faint">
+            Saltar por ahora
+          </button>
+        </div>
+
+        {/* Buscador de ciudad como overlay (fixed, funciona sobre cualquier pantalla) */}
+        {showCityPicker && (
+          <LocationSheet
+            current={ciudadResidencia}
+            recientes={[]}
+            onPick={(c) => { setCiudadResidencia(c); setShowCityPicker(false); }}
+            onClose={() => setShowCityPicker(false)}
+            zIndex={95}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Paso final — resumen y confirmación
   return (
     <div className="fade flex-1 flex flex-col pt-2 px-[22px]">
       <div className="flex items-center gap-3.5 pt-1 pb-[18px]">
         <button onClick={back} className="w-[38px] h-[38px] rounded-full shrink-0 grid place-items-center bg-white/5 border border-cardstroke">
           <Icon name="chevLeft" size={20} color="var(--ink)" />
         </button>
-        <div className="flex-1"><Progress step={3} total={total} /></div>
+        <div className="flex-1"><Progress step={4} total={total} /></div>
       </div>
       <div className="flex-1 flex flex-col justify-center pb-[30px]">
         <div className="rise w-[70px] h-[70px] rounded-lg mb-[26px] grid place-items-center bg-[rgba(210,115,79,0.12)] border border-[rgba(210,115,79,0.3)]">
@@ -227,10 +304,13 @@ export default function Onboarding({ onComplete, initialStep = 0 }) {
           <SummaryLine icon="heart" label="Te interesa" value={intereses.slice(0, 3).join(" · ") + (intereses.length > 3 ? "…" : "")} />
           <SummaryLine icon="user" label="Exploras" value={compania} />
           <SummaryLine icon="route" label="Tu ritmo" value={actividad} />
+          {ciudadResidencia && (
+            <SummaryLine icon="home" label="Tu ciudad" value={ciudadResidencia.name} />
+          )}
         </div>
       </div>
       <div className="pb-[22px]">
-        <PrimaryBtn label="Empezar a descubrir" onClick={() => onComplete({ intereses, compania, actividad })} icon="arrowRight" />
+        <PrimaryBtn label="Empezar a descubrir" onClick={() => onComplete({ intereses, compania, actividad, ciudadResidencia })} icon="arrowRight" />
       </div>
     </div>
   );

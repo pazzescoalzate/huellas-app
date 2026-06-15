@@ -56,7 +56,7 @@ function Esqueleto() {
 }
 
 /* ── Componente principal ────────────────────────────────────────────────── */
-export default function LocationSheet({ current, recientes = [], onPick, onClose }) {
+export default function LocationSheet({ current, recientes = [], onPick, onClose, ciudadResidencia = null, zIndex = 55 }) {
   const [closing,   setClosing]   = useState(false);
   const [q,         setQ]         = useState("");
   const [sugerencias, setSugerencias] = useState([]);
@@ -121,7 +121,7 @@ export default function LocationSheet({ current, recientes = [], onPick, onClose
     // "fixed inset-0" ancla el overlay al viewport, no al contenedor padre.
     // Con "absolute" el translateY(100%) inicial podía quedar fuera del clip
     // y el navegador desplazaba el contenido principal para mostrarlo.
-    <div className="fixed inset-0 z-[55] flex flex-col">
+    <div className="fixed inset-0 flex flex-col" style={{ zIndex }}>
       <style>{`
         .loc-scrim{ opacity: 1; }
         .loc-sheet{ transform: none; }
@@ -216,26 +216,45 @@ export default function LocationSheet({ current, recientes = [], onPick, onClose
             </div>
           )}
 
-          {/* ── Recientes (campo vacío) ────────────────────────────────── */}
+          {/* ── Recientes y ciudad de residencia (campo vacío) ────────── */}
           {mostrandoRecientes && (
-            recientes.length > 0 ? (
-              <>
-                <SeccionLabel>Recientes</SeccionLabel>
-                {recientes.map((c) => (
+            <>
+              {/* Opción rápida: ciudad de residencia del perfil */}
+              {ciudadResidencia && (
+                <>
+                  <SeccionLabel>Tu ciudad</SeccionLabel>
                   <CiudadFila
-                    key={c.id}
-                    ciudad={c}
-                    icono="clock"
-                    activa={c.id === current?.id}
-                    onClick={() => pick(c)}
+                    ciudad={ciudadResidencia}
+                    icono="home"
+                    activa={ciudadResidencia.id === current?.id}
+                    onClick={() => pick(ciudadResidencia)}
                   />
-                ))}
-              </>
-            ) : (
-              <p className="text-center text-[14px] font-light text-ink-faint py-6">
-                Escribe una ciudad para empezar a explorar.
-              </p>
-            )
+                </>
+              )}
+
+              {/* Ciudades exploradas recientemente */}
+              {recientes.length > 0 && (
+                <>
+                  <SeccionLabel>Recientes</SeccionLabel>
+                  {recientes.map((c) => (
+                    <CiudadFila
+                      key={c.id}
+                      ciudad={c}
+                      icono="clock"
+                      activa={c.id === current?.id}
+                      onClick={() => pick(c)}
+                    />
+                  ))}
+                </>
+              )}
+
+              {/* Empty state: solo si no hay ni recientes ni ciudad de residencia */}
+              {!ciudadResidencia && recientes.length === 0 && (
+                <p className="text-center text-[14px] font-light text-ink-faint py-6">
+                  Escribe una ciudad para empezar a explorar.
+                </p>
+              )}
+            </>
           )}
 
           {/* ── Sugerencias de búsqueda (campo con texto) ─────────────── */}

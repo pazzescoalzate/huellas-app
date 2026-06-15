@@ -43,7 +43,7 @@ export function PerfilProvider({ children }) {
   /* Guarda las respuestas del onboarding en Supabase y marca que ya se completó.
      Usa actualización optimista: la app avanza de inmediato en la pantalla mientras
      Supabase confirma el guardado en segundo plano. */
-  async function guardarOnboarding({ intereses, forma_explorar, ritmo }) {
+  async function guardarOnboarding({ intereses, forma_explorar, ritmo, ciudad_residencia = null }) {
     if (!usuario) return;
 
     // Actualización optimista: el componente que lee perfil.onboarding_completado
@@ -53,6 +53,7 @@ export function PerfilProvider({ children }) {
       intereses,
       forma_explorar,
       ritmo,
+      ciudad_residencia,
       onboarding_completado: true,
     }));
 
@@ -61,6 +62,7 @@ export function PerfilProvider({ children }) {
         intereses,
         forma_explorar,
         ritmo,
+        ciudad_residencia: ciudad_residencia ?? null,
         onboarding_completado: true,
       });
       setPerfil(datos); // sincronizamos con la respuesta real del servidor

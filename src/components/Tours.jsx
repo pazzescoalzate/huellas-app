@@ -5,6 +5,13 @@ import { Chip, CatSurface } from "./Shared.jsx";
 import { CatTag, CardTap } from "./Cards.jsx";
 import { CAT, TOURS } from "../data/huella.js";
 
+/* ─── BANDERA DE ACTIVACIÓN ───────────────────────────────────────────────
+   Cambia a `true` cuando haya datos reales de tours listos para mostrar.
+   Con false, la pantalla muestra el estado "Próximamente" y el resto del
+   código queda intacto, listo para reactivarse con ese único cambio.
+   ───────────────────────────────────────────────────────────────────────── */
+const TOURS_LISTOS = false;
+
 export function ScreenHead({ title, sub, scrolled }) {
   return (
     <div className="sticky top-0 z-20 pt-3 px-[22px] pb-3.5"
@@ -85,6 +92,35 @@ export default function ToursScreen({ location }) {
   const [scope, setScope] = useState("Cerca de ti");
   const scopes = ["Cerca de ti", "Este finde", "Medio día", "Día completo"];
   const [scrolled, setScrolled] = useState(false);
+
+  // Cuando TOURS_LISTOS sea false, mostramos el estado "Próximamente"
+  // y saltamos el código de tours de ejemplo que viene más abajo.
+  if (!TOURS_LISTOS) {
+    return (
+      <div className="flex-1 flex flex-col">
+        <ScreenHead
+          title="Tours"
+          // sub={`Guiados por locales${location ? " · " + location : ""}`}
+          scrolled={false}
+        />
+        <div className="flex-1 flex flex-col items-center justify-center px-8 pb-28 text-center">
+          <div
+            className="w-[76px] h-[76px] rounded-2xl mb-6 grid place-items-center"
+            style={{ background: "rgba(210,115,79,0.10)", border: "1px solid rgba(210,115,79,0.22)" }}
+          >
+            <Icon name="compass" size={34} color="var(--accent-soft)" stroke={1.4} />
+          </div>
+          <h2 className="text-[22px] font-semibold text-ink-strong tracking-[-0.01em] mb-2">
+            Pronto
+          </h2>
+          <p className="text-[14.5px] font-light text-ink-soft leading-[1.6] [text-wrap:balance]">
+            Estamos preparando algo especial para esta sección.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div onScroll={(e) => setScrolled(e.target.scrollTop > 8)} className="flex-1 overflow-y-auto pb-24">
       <ScreenHead title="Tours" sub={`Guiados por locales${location ? " · " + location : ""}`} scrolled={scrolled} />

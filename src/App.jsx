@@ -249,9 +249,10 @@ export default function App() {
             onComplete={async (p) => {
               setPrefs(p);
               await guardarOnboarding({
-                intereses:      p.intereses,
-                forma_explorar: p.compania,
-                ritmo:          p.actividad,
+                intereses:         p.intereses,
+                forma_explorar:    p.compania,
+                ritmo:             p.actividad,
+                ciudad_residencia: p.ciudadResidencia || null,
               });
             }}
           />
@@ -321,6 +322,7 @@ export default function App() {
             recientes={recientes}
             onPick={handlePickCiudad}
             onClose={() => setLocSheet(false)}
+            ciudadResidencia={perfil?.ciudad_residencia || null}
           />
         )}
 
