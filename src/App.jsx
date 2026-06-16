@@ -137,8 +137,8 @@ export default function App() {
     if (perfil?.intereses?.length && !prefs?.intereses?.length) {
       setPrefs({
         intereses: perfil.intereses,
-        compania:  perfil.forma_explorar || "Con pareja",
-        actividad: perfil.ritmo          || "Moderado",
+        compania:  perfil.forma_explorar || [],
+        actividad: perfil.ritmo          || [],
       });
     }
   }, [perfil]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -292,8 +292,8 @@ export default function App() {
             prefs={
               prefs || {
                 intereses: [],
-                compania:  "Con pareja",
-                actividad: "Moderado",
+                compania:  [],
+                actividad: [],
               }
             }
             onSavePrefs={guardarPrefs}

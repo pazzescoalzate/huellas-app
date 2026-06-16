@@ -15,14 +15,14 @@ export default function SettingsSheet({ prefs, onSave, onClose }) {
 
   const [closing,        setClosing]        = useState(false);
   const [intereses,      setIntereses]      = useState(prefs.intereses || []);
-  const [compania,       setCompania]       = useState(prefs.compania || "Solo");
-  const [actividad,      setActividad]      = useState(prefs.actividad || "Moderado");
+  const [compania,       setCompania]       = useState(Array.isArray(prefs.compania)  ? prefs.compania  : []);
+  const [actividad,      setActividad]      = useState(Array.isArray(prefs.actividad) ? prefs.actividad : []);
   const [ciudadResidencia, setCiudadResidencia] = useState(perfil?.ciudad_residencia || null);
   const [showCityPicker, setShowCityPicker] = useState(false);
 
   const close = () => { setClosing(true); setTimeout(onClose, 280); };
   const save  = () => { onSave({ intereses, compania, actividad }); close(); };
-  const toggle = (v) => setIntereses((arr) => arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
+  const toggle = (arr, set, v) => set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
   const lbl = "text-[11px] font-semibold tracking-[0.12em] uppercase text-ink-faint";
 
   // Guarda la ciudad de residencia en Supabase y refresca el contexto al instante
@@ -103,20 +103,20 @@ export default function SettingsSheet({ prefs, onSave, onClose }) {
           <div className={lbl + " mb-3"}>Tus intereses</div>
           <div className="flex flex-wrap gap-2 mb-[26px]">
             {ONB.intereses.map((it) => (
-              <Chip key={it} active={intereses.includes(it)} onClick={() => toggle(it)}>{it}</Chip>
+              <Chip key={it} active={intereses.includes(it)} onClick={() => toggle(intereses, setIntereses, it)}>{it}</Chip>
             ))}
           </div>
 
           {/* compañía */}
           <div className={lbl + " mb-3"}>Cómo exploras</div>
           {ONB.compania.map((o) => (
-            <OptionRow key={o.k} label={o.k} desc={o.d} active={compania === o.k} onClick={() => setCompania(o.k)} />
+            <OptionRow key={o.k} label={o.k} desc={o.d} active={compania.includes(o.k)} onClick={() => toggle(compania, setCompania, o.k)} />
           ))}
 
           {/* ritmo */}
           <div className={lbl + " mt-3.5 mb-3"}>Tu ritmo</div>
           {ONB.actividad.map((o) => (
-            <OptionRow key={o.k} label={o.k} desc={o.d} active={actividad === o.k} onClick={() => setActividad(o.k)} />
+            <OptionRow key={o.k} label={o.k} desc={o.d} active={actividad.includes(o.k)} onClick={() => toggle(actividad, setActividad, o.k)} />
           ))}
         </div>
 

@@ -254,12 +254,12 @@ export default function ProfileScreen({ prefs, onSavePrefs, onCrearCuenta }) {
     : new Date().getFullYear();
   const intereses = perfil?.intereses || [];
 
-  // Datos de preferencias para la sección "Mis intereses"
-  const formaExplorar   = perfil?.forma_explorar || null;
-  const ritmo           = perfil?.ritmo          || null;
-  const opcionCompania  = ONB.compania.find((o)  => o.k === formaExplorar) || null;
-  const opcionActividad = ONB.actividad.find((o) => o.k === ritmo)         || null;
-  const tieneAlgoDato   = intereses.length > 0 || !!formaExplorar || !!ritmo;
+  // Datos de preferencias para la sección "Mis intereses" (arrays desde Supabase JSONB)
+  const formaExplorar     = Array.isArray(perfil?.forma_explorar) ? perfil.forma_explorar : [];
+  const ritmo             = Array.isArray(perfil?.ritmo)          ? perfil.ritmo          : [];
+  const opcionesCompania  = ONB.compania.filter((o) => formaExplorar.includes(o.k));
+  const opcionesActividad = ONB.actividad.filter((o) => ritmo.includes(o.k));
+  const tieneAlgoDato     = intereses.length > 0 || formaExplorar.length > 0 || ritmo.length > 0;
 
   // Estadísticas reales calculadas desde los contextos de visitados y guardados
   const statNaturaleza = visitadosList.filter((v) => FAMILIA_NATURALEZA.has(v.lugar_categoria)).length;
@@ -396,41 +396,27 @@ export default function ProfileScreen({ prefs, onSavePrefs, onCrearCuenta }) {
               </div>
             )}
 
-            {/* 2. Cómo explora y 3. Su ritmo — en card con divisor */}
-            {(opcionCompania || opcionActividad) && (
-              <div className="rounded-xl overflow-hidden border border-cardstroke bg-white/[0.04] divide-y divide-cardstroke/40">
+            {/* 2. Cómo explora — mismo estilo que Intereses, sin tarjeta */}
+            {opcionesCompania.length > 0 && (
+              <div className="mb-5">
+                <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-ink-faint mb-2.5">
+                  Cómo explora
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {opcionesCompania.map((o) => <Chip key={o.k} active>{o.k}</Chip>)}
+                </div>
+              </div>
+            )}
 
-                {opcionCompania && (
-                  <div className="flex items-start gap-3.5 px-4 py-3.5">
-                    <div className="w-8 h-8 rounded-full grid place-items-center shrink-0 mt-0.5"
-                      style={{ background: "rgba(210,115,79,0.10)", border: "1px solid rgba(210,115,79,0.18)" }}>
-                      <Icon name={ICON_COMPANIA[formaExplorar] || "user"} size={16} color="var(--accent-soft)" stroke={1.6} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-ink-faint mb-0.5">
-                        Cómo explora
-                      </div>
-                      <div className="text-[15px] font-medium text-ink-strong leading-snug">{opcionCompania.k}</div>
-                      <div className="text-[12.5px] font-light text-ink-soft mt-px">{opcionCompania.d}</div>
-                    </div>
-                  </div>
-                )}
-
-                {opcionActividad && (
-                  <div className="flex items-start gap-3.5 px-4 py-3.5">
-                    <div className="w-8 h-8 rounded-full grid place-items-center shrink-0 mt-0.5"
-                      style={{ background: "rgba(210,115,79,0.10)", border: "1px solid rgba(210,115,79,0.18)" }}>
-                      <Icon name={ICON_ACTIVIDAD[ritmo] || "activity"} size={16} color="var(--accent-soft)" stroke={1.6} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-ink-faint mb-0.5">
-                        Su ritmo
-                      </div>
-                      <div className="text-[15px] font-medium text-ink-strong leading-snug">{opcionActividad.k}</div>
-                      <div className="text-[12.5px] font-light text-ink-soft mt-px">{opcionActividad.d}</div>
-                    </div>
-                  </div>
-                )}
+            {/* 3. Su ritmo — mismo estilo que Intereses, sin tarjeta */}
+            {opcionesActividad.length > 0 && (
+              <div className="mb-5">
+                <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-ink-faint mb-2.5">
+                  Su ritmo
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {opcionesActividad.map((o) => <Chip key={o.k} active>{o.k}</Chip>)}
+                </div>
               </div>
             )}
           </>
