@@ -19,6 +19,9 @@ import { useGuardados } from "../context/GuardadosContext.jsx";
 const FAMILIA_NATURALEZA = new Set(["naturaleza", "miradores", "aventura"]);
 const FAMILIA_URBANO     = new Set(["cultura", "gastronomia", "cafes", "bienestar"]);
 
+// Cambiar a true cuando se implemente la subida de foto con Supabase Storage.
+const FOTO_PERFIL_ACTIVA = false;
+
 /* Íconos para cada opción de compañía y ritmo */
 const ICON_COMPANIA = {
   "Solo":            "user",
@@ -320,12 +323,16 @@ export default function ProfileScreen({ prefs, onSavePrefs, onCrearCuenta }) {
             style={{ background: "linear-gradient(135deg, #C05A34, #7A3E55)" }}>
             {iniciales}
           </div>
-          <PhotoSlot id="avatar-photo" shape="circle"
-            style={{ position: "absolute", inset: 0, width: 86, height: 86, zIndex: 2 }} />
-          <span className="absolute -right-0.5 bottom-0.5 w-7 h-7 rounded-full grid place-items-center bg-accent z-[3] pointer-events-none"
-            style={{ border: "2px solid var(--bg-1)" }}>
-            <Icon name="camera" size={14} color="var(--on-accent)" stroke={2} />
-          </span>
+          {FOTO_PERFIL_ACTIVA && (
+            <PhotoSlot id="avatar-photo" shape="circle"
+              style={{ position: "absolute", inset: 0, width: 86, height: 86, zIndex: 2 }} />
+          )}
+          {FOTO_PERFIL_ACTIVA && (
+            <span className="absolute -right-0.5 bottom-0.5 w-7 h-7 rounded-full grid place-items-center bg-accent z-[3] pointer-events-none"
+              style={{ border: "2px solid var(--bg-1)" }}>
+              <Icon name="camera" size={14} color="var(--on-accent)" stroke={2} />
+            </span>
+          )}
         </div>
         <div className="text-[22px] font-semibold text-ink-strong tracking-[-0.01em] mt-3.5">{nombre}</div>
         <div className="text-[13px] font-light text-ink-faint mt-0.5">{handle} · Explorando desde {anio}</div>
