@@ -113,8 +113,8 @@ function WelcomeScene() {
 export default function Onboarding({ onComplete, initialStep = 0 }) {
   const [step, setStep] = useState(initialStep);
   const [intereses, setIntereses] = useState(["Naturaleza", "Miradores", "Cafés"]);
-  const [compania, setCompania] = useState("Con pareja");
-  const [actividad, setActividad] = useState("Moderado");
+  const [compania, setCompania] = useState([]);
+  const [actividad, setActividad] = useState([]);
   const [ciudadResidencia, setCiudadResidencia] = useState(null);
   const [showCityPicker, setShowCityPicker] = useState(false);
 
@@ -184,7 +184,7 @@ export default function Onboarding({ onComplete, initialStep = 0 }) {
         <h2 className="text-[25px] font-medium text-ink-strong mb-2 tracking-[-0.01em]">¿Cómo te gusta explorar?</h2>
         <p className="text-[14px] font-light text-ink-soft mb-[22px]">Adaptaremos el ritmo y las sugerencias a tu compañía.</p>
         {ONB.compania.map((o) => (
-          <OptionRow key={o.k} label={o.k} desc={o.d} active={compania === o.k} onClick={() => setCompania(o.k)} />
+          <OptionRow key={o.k} label={o.k} desc={o.d} active={compania.includes(o.k)} onClick={() => toggle(compania, setCompania, o.k)} />
         ))}
       </StepShell>
     );
@@ -196,7 +196,7 @@ export default function Onboarding({ onComplete, initialStep = 0 }) {
         <h2 className="text-[25px] font-medium text-ink-strong mb-2 tracking-[-0.01em]">¿Qué nivel de actividad prefieres?</h2>
         <p className="text-[14px] font-light text-ink-soft mb-[22px]">Desde paseos tranquilos hasta rutas que ponen a prueba.</p>
         {ONB.actividad.map((o) => (
-          <OptionRow key={o.k} label={o.k} desc={o.d} active={actividad === o.k} onClick={() => setActividad(o.k)} />
+          <OptionRow key={o.k} label={o.k} desc={o.d} active={actividad.includes(o.k)} onClick={() => toggle(actividad, setActividad, o.k)} />
         ))}
         <div className="mt-[18px] px-4 py-3.5 rounded-md bg-white/[0.04] border border-cardstroke flex gap-[11px] items-center">
           <Icon name="pin" size={18} color="var(--accent-soft)" />
@@ -302,8 +302,8 @@ export default function Onboarding({ onComplete, initialStep = 0 }) {
         </p>
         <div className="rise flex flex-col gap-2.5" style={{ animationDelay: "0.15s" }}>
           <SummaryLine icon="heart" label="Te interesa" value={intereses.slice(0, 3).join(" · ") + (intereses.length > 3 ? "…" : "")} />
-          <SummaryLine icon="user" label="Exploras" value={compania} />
-          <SummaryLine icon="route" label="Tu ritmo" value={actividad} />
+          <SummaryLine icon="user" label="Exploras" value={compania.length > 0 ? compania.join(", ") : "Sin especificar"} />
+          <SummaryLine icon="route" label="Tu ritmo" value={actividad.length > 0 ? actividad.join(", ") : "Sin especificar"} />
           {ciudadResidencia && (
             <SummaryLine icon="home" label="Tu ciudad" value={ciudadResidencia.name} />
           )}
